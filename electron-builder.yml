@@ -1,0 +1,43 @@
+# Windows x64 only, for v0.1.0. Auto-update, code signing, other architectures
+# and other platforms are deliberately out of scope (see plans/phase-11).
+appId: dev.gitdeck.app
+productName: GitDeck
+copyright: GitDeck
+
+# node-pty 1.1.0 ships N-API prebuilds and has no gypfile — there is literally
+# nothing to build. Left on, electron-builder invokes node-gyp, which demands a
+# Visual Studio installation on every machine that packages the app, and fails.
+# One N-API binary serves both Node and Electron, which is why the same file has
+# been spawning real shells under Electron since Phase 1.
+npmRebuild: false
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+
+# node-pty ships a native .node binary, and a native module cannot be loaded
+# from inside an asar archive. Unpacking it is the single most important line in
+# this file: without it the app installs cleanly and then fails to open a
+# terminal on the user's machine.
+asarUnpack:
+  - node_modules/node-pty/**
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # Terminals are real OS processes; the installer must not leave them running.
+  runAfterFinish: false

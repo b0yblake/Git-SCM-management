@@ -1,0 +1,38 @@
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 1.6rem;
+  padding: 0.15rem 0.75rem;
+  border-top: 1px solid #333;
+  background: #202020;
+  font-size: 0.75rem;
+}
+
+.git-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.git-badge__branch {
+  color: #d4d4d4;
+}
+
+.git-badge__branch::before {
+  content: '⎇ ';
+  color: #8a8a8a;
+}
+
+.git-badge__ab {
+  color: #4a9eff;
+  letter-spacing: 0.08em;
+}
+
+.git-badge__clean {
+  color: #8a8a8a;
+}
+
+.git-badge__dirty {
+  color: #e6c07b;
+}

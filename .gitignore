@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build and package outputs
+out/
+dist/
+release/
+
+# Test outputs
+coverage/
+test-results/
+playwright-report/
+
+# TypeScript and tool caches
+*.tsbuildinfo
+.eslintcache
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment files (keep templates trackable)
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

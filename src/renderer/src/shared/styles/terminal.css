@@ -1,0 +1,215 @@
+.terminal-tabs {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.terminal-tabs__panels {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Inactive panels stay mounted so their xterm keeps its scrollback. */
+.terminal-tabs__panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.terminal-tabs__panel[hidden] {
+  display: none;
+}
+
+.terminal-tabs__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: #3a2020;
+  color: #f0857d;
+  font-size: 0.8125rem;
+}
+
+.terminal-tab-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  background: #181818;
+  border-bottom: 1px solid #333;
+  overflow-x: auto;
+}
+
+.terminal-tab-bar__new {
+  padding: 0 0.75rem;
+  border: none;
+  background: transparent;
+  color: #9a9a9a;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.terminal-tab-bar__new:hover {
+  color: #e6e6e6;
+}
+
+.terminal-tab {
+  display: flex;
+  align-items: center;
+  min-width: 8rem;
+  max-width: 14rem;
+  background: #232323;
+  border-top: 2px solid transparent;
+}
+
+.terminal-tab--active {
+  background: #1e1e1e;
+  border-top-color: #4a9eff;
+}
+
+.terminal-tab--exited .terminal-tab__label {
+  color: #8a8a8a;
+}
+
+.terminal-tab__label,
+.terminal-tab__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: #d4d4d4;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.terminal-tab__input {
+  outline: 1px solid #4a9eff;
+  cursor: text;
+}
+
+.terminal-tab__badge {
+  color: #8a8a8a;
+}
+
+.terminal-tab__close {
+  padding: 0 0.5rem;
+  border: none;
+  background: transparent;
+  color: #8a8a8a;
+  cursor: pointer;
+}
+
+.terminal-tab__close:hover {
+  color: #e6e6e6;
+}
+
+.terminal-view {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+/*
+ * Absolutely positioned on purpose. As a flex item its height depended on the
+ * rows xterm had rendered, so resizing the terminal changed the box that
+ * FitAddon measures — a ResizeObserver feedback loop that oscillated between
+ * 40 and 41 rows forever. Taking it out of flow makes the measured box depend
+ * only on the parent, which breaks the loop at its source.
+ */
+.terminal-view__surface {
+  position: absolute;
+  inset: 0;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.terminal-view__surface .xterm {
+  height: 100%;
+}
+
+.terminal-view__exited {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background: #2b2b2b;
+  color: #cfcfcf;
+  font-size: 0.8125rem;
+}
+
+.new-terminal {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.new-terminal__create,
+.new-terminal__toggle {
+  padding: 0 0.6rem;
+  border: none;
+  background: transparent;
+  color: #9a9a9a;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.new-terminal__toggle {
+  padding: 0 0.35rem;
+  font-size: 0.75rem;
+}
+
+.new-terminal__create:hover,
+.new-terminal__toggle:not(:disabled):hover {
+  color: #e6e6e6;
+}
+
+.new-terminal__toggle:disabled {
+  color: #555;
+  cursor: default;
+}
+
+.new-terminal__menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  min-width: 12rem;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+}
+
+.new-terminal__item {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: #d4d4d4;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.new-terminal__item:hover {
+  background: #04395e;
+}
+
+.new-terminal__default {
+  color: #8a8a8a;
+}

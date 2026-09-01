@@ -1,0 +1,23 @@
+{
+  "id": "ws_aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+  "name": "GitDeck",
+  "version": 1,
+  "terminals": [
+    {
+      "id": "term_11111111-1111-4111-8111-111111111111",
+      "title": "dev server",
+      "cwd": "C:\\Users\\dev\\gitdeck",
+      "shellProfileId": "powershell",
+      "startupCommand": "npm run dev"
+    },
+    {
+      "id": "term_22222222-2222-4222-8222-222222222222",
+      "title": "git",
+      "cwd": "C:\\Users\\dev\\gitdeck",
+      "shellProfileId": "git-bash"
+    }
+  ],
+  "activeTerminalId": "term_11111111-1111-4111-8111-111111111111",
+  "createdAt": 1756000000000,
+  "updatedAt": 1756000100000
+}

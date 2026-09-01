@@ -1,0 +1,218 @@
+.workspace-panel {
+  display: flex;
+  min-width: 0;
+  background: var(--surface-raised);
+}
+
+.workspace-sidebar {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.workspace-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.workspace-sidebar__header button {
+  flex: none;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+.workspace-sidebar__header h2 {
+  margin: 0;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9a9a9a;
+}
+
+.workspace-sidebar__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workspace-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0;
+}
+
+.workspace-sidebar__item--active .workspace-sidebar__open {
+  color: #4a9eff;
+}
+
+.workspace-sidebar__open {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0.3rem 0.4rem;
+  border: none;
+  background: transparent;
+  color: #d4d4d4;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workspace-sidebar__count {
+  color: #8a8a8a;
+  font-size: 0.75rem;
+}
+
+.workspace-sidebar__empty {
+  margin: 0;
+  color: #8a8a8a;
+}
+
+.workspace-sidebar__failures,
+.workspace-sidebar__error {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  background: #3a2020;
+  color: #f0857d;
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+/* Overlays the terminal rather than widening the rail: the editor is
+   transient, and pushing the whole layout sideways to show it was jarring. */
+.workspace-editor {
+  position: absolute;
+  top: 0;
+  left: 17rem;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 22rem;
+  background: var(--surface-raised);
+  box-shadow: 0 0 24px rgb(0 0 0 / 45%);
+  padding: 0.75rem;
+  border-left: 1px solid #333;
+  overflow-y: auto;
+}
+
+.workspace-editor label {
+  color: #9a9a9a;
+  font-size: 0.8125rem;
+}
+
+.workspace-editor input,
+.workspace-editor select {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #3c3c3c;
+  border-radius: 3px;
+  background: #1a1a1a;
+  color: #e6e6e6;
+  font: inherit;
+}
+
+.definition-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.25rem 0;
+  padding: 0.5rem;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+}
+
+.workspace-editor__problems {
+  margin: 0;
+  padding: 0.4rem 0.5rem 0.4rem 1.4rem;
+  background: #3a2020;
+  color: #f0857d;
+  font-size: 0.8125rem;
+}
+
+.workspace-editor__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.workspace-panel button {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #3c3c3c;
+  border-radius: 3px;
+  background: #2b2b2b;
+  color: #d4d4d4;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workspace-panel button:hover {
+  background: #3a3a3a;
+}
+
+.workspace-sidebar__notices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workspace-sidebar__notice {
+  padding: 0.35rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8125rem;
+}
+
+.workspace-sidebar__notice--error {
+  background: #3a2020;
+  color: #f0857d;
+}
+
+.workspace-sidebar__notice--warning {
+  background: #3a3320;
+  color: #e6c07b;
+}
+
+.startup-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-top: 1px solid #333;
+  background: #202020;
+}
+
+.startup-settings h2 {
+  margin: 0;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9a9a9a;
+}
+
+.startup-settings label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #d4d4d4;
+  font-size: 0.8125rem;
+}
+
+.startup-settings input:disabled + *,
+.startup-settings label:has(input:disabled) {
+  color: #6a6a6a;
+}
+
+.startup-settings__hint {
+  margin: 0;
+  color: #8a8a8a;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}

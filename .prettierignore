@@ -1,0 +1,12 @@
+out
+dist
+node_modules
+coverage
+package-lock.json
+
+# Planning documents are hand-formatted (tables, diagrams) — leave them alone.
+*.md
+plans/
+
+# Fixtures are captured inputs, and corrupt.json is deliberately unparseable.
+tests/fixtures/

@@ -1,0 +1,482 @@
+# GitDeck — Architecture Reference
+
+> **Purpose:** the single shared contract every phase plan depends on.
+> This file describes *how* the system is built. It contains no tasks.
+>
+> Read this before starting any `phase-*.md`.
+>
+> Extracted from `../PLAN.md` (§1–8, §13, §18–21, §25–27).
+
+---
+
+## 1. Mandatory rules
+
+1. **UI never spawns shell processes directly.**
+2. **Electron Main owns all PTY/native process resources.**
+3. **Renderer communicates with Main only through typed IPC contracts.**
+4. **Business/domain logic must not import React.**
+5. **Feature modules must expose public interfaces instead of reaching into another feature's internal files.**
+6. **Git features must not be required for terminal features to work.**
+7. **Persistence must store serializable definitions, never live PTY objects.**
+8. **Shell detection and Git detection are infrastructure services, not UI concerns.**
+9. **No feature may directly call `ipcRenderer` outside the preload/bridge layer.**
+10. **Every feature must have an explicit scope, public API, tests, and Definition of Done.**
+
+---
+
+## 2. Layer responsibilities
+
+| Layer | Owns | MUST NOT import |
+|---|---|---|
+| **Domain** | data models, rules | Electron, React, node-pty, xterm.js |
+| **Application** | use cases (create terminal, open workspace, inspect repo) | UI code |
+| **Infrastructure** | OS-specific behavior (node-pty, fs, child_process, Electron APIs) | — |
+| **UI / Renderer** | presentation, interaction | PTY instances, filesystem details, native Node APIs |
+
+Dependency direction:
+
+```text
+UI
+ ↓
+application API
+ ↓
+domain
+ ↑
+infrastructure implements interfaces
+```
+
+Forbidden edges:
+
+```text
+domain → Electron
+domain → React
+domain → node-pty
+workspace infrastructure → terminal internals
+Git feature → terminal infrastructure
+renderer → ipcRenderer
+UI component → filesystem
+```
+
+---
+
+## 3. Source structure
+
+```text
+src/
+├── shared/
+│   ├── domain/        errors.ts · ids.ts · result.ts
+│   ├── contracts/     ipc.ts · events.ts
+│   └── utils/
+│
+├── main/
+│   ├── bootstrap/     createWindow.ts · registerIpc.ts · container.ts
+│   ├── features/
+│   │   ├── terminal/  domain/ application/ infrastructure/ ipc/ public.ts
+│   │   ├── workspace/ domain/ application/ infrastructure/ ipc/ public.ts
+│   │   ├── git/       domain/ application/ infrastructure/ ipc/ public.ts
+│   │   ├── settings/  domain/ application/ infrastructure/ ipc/ public.ts
+│   │   └── ports/     domain/ application/ infrastructure/ ipc/ public.ts   (Phase 12)
+│   └── index.ts
+│
+├── preload/           terminalApi.ts · workspaceApi.ts · gitApi.ts · settingsApi.ts · portsApi.ts · types.d.ts · index.ts
+│
+└── renderer/src/
+    ├── app/           App.tsx · routes.tsx · providers.tsx
+    ├── features/
+    │   ├── terminal/  components/ hooks/ store/ model/ public.ts
+    │   ├── workspace/ components/ hooks/ store/ public.ts
+    │   ├── git/       components/ hooks/ store/ public.ts
+    │   ├── settings/  components/ hooks/ store/ public.ts
+    │   └── ports/     components/ hooks/ store/ public.ts   (Phase 12)
+    ├── shared/        components/ hooks/ styles/ utils/
+    └── main.tsx
+```
+
+---
+
+## 4. Feature boundary rule
+
+Every feature exposes exactly one `public.ts`.
+
+```ts
+// main/features/terminal/public.ts
+export { TerminalService } from './application/TerminalService'
+export type { TerminalCreateRequest, TerminalSessionInfo } from './domain/TerminalSession'
+```
+
+Allowed:
+
+```ts
+import { TerminalService } from '../terminal/public'
+```
+
+Forbidden:
+
+```ts
+import { NodePtyAdapter } from '../terminal/infrastructure/NodePtyAdapter'
+```
+
+---
+
+## 5. Core domain models
+
+```ts
+export type ShellProfileId = 'git-bash' | 'powershell' | 'pwsh' | 'cmd' | 'wsl'
+
+export interface TerminalDefinition {
+  id: string
+  title: string
+  cwd: string
+  shellProfileId: ShellProfileId
+  startupCommand?: string
+}
+
+export type TerminalSessionStatus = 'starting' | 'running' | 'exited' | 'failed'
+
+export interface TerminalSessionInfo {
+  id: string
+  definition: TerminalDefinition
+  status: TerminalSessionStatus
+  exitCode?: number
+  createdAt: number
+}
+
+export interface Workspace {
+  id: string
+  name: string
+  version: 1
+  terminals: TerminalDefinition[]
+  // Always names one of `terminals`, or is absent: validation drops a value
+  // pointing at a terminal that was removed (Phase 6).
+  activeTerminalId?: string
+  createdAt: number
+  updatedAt: number
+}
+
+// What `list()` answers with — a sidebar has no use for every definition.
+export interface WorkspaceSummary {
+  id: string
+  name: string
+  terminalCount: number
+  createdAt: number
+  updatedAt: number
+}
+
+// What a caller may supply to `save()`. Absent `id` means "create".
+export interface WorkspaceInput {
+  id?: string
+  name: string
+  terminals: TerminalDefinition[]
+  activeTerminalId?: string
+}
+
+export interface WorkspaceLayout {
+  version: 1
+  mode: 'tabs' | 'split'
+}
+
+export interface GitRepositoryStatus {
+  repositoryRoot: string
+  branch: string | null
+  ahead: number
+  behind: number
+  staged: number
+  modified: number
+  untracked: number
+  conflicted: number
+  isClean: boolean
+}
+
+// Fields are added by the phase that needs them; `normalizeSettings` defaults
+// anything missing, so adding one is not a migration.
+// Kept flat: PLAN.md sketched a nested `behavior` group, but with a handful of
+// fields that would only mean two shapes to validate.
+interface AppSettings {
+  version: 1
+  defaultShellProfileId: ShellProfileId | null // Phase 5
+  activeWorkspaceId: string | null // Phase 7 writes it, Phase 8 restores from it
+  activeTerminalDefinitionId: string | null // Phase 8 — a definition, never a session
+  restoreLastWorkspace: boolean // Phase 8, default true
+  runStartupCommandsOnRestore: boolean // Phase 8, default FALSE on purpose
+  terminalFontSize: number // Phase 10, clamped to 8..32
+  terminalCursorBlink: boolean // Phase 10
+  confirmBeforeClosingRunningTerminal: boolean // Phase 10, default true
+}
+```
+
+`TerminalSessionInfo` is serializable. The `node-pty` instance stays internal to Main.
+
+```ts
+// Phase 12 — port management. The renderer sees descriptions; the only thing
+// it may send back is an opaque capability minted by Main for one snapshot.
+export type PortProtocol = 'tcp' | 'udp'
+
+export interface PortBinding {
+  protocol: PortProtocol
+  localAddress: string
+  localPort: number
+}
+
+export type PortTerminationBlockReason =
+  | 'system-process' | 'gitdeck-process' | 'different-session' | 'identity-unavailable'
+
+// One selectable row: a process and every binding it owns. Terminating it
+// releases all of them — the modal exists to make that blast radius visible.
+export interface PortProcess {
+  targetId: string // opaque capability, NOT a PID
+  pid: number
+  processName: string
+  startedAt: number | null
+  bindings: readonly PortBinding[]
+  canTerminate: boolean
+  blockedReason?: PortTerminationBlockReason
+}
+
+export interface PortSnapshot {
+  id: string
+  capturedAt: number
+  processes: readonly PortProcess[]
+}
+
+// terminate() accepts snapshot + target ids only. There is deliberately no
+// public type through which a PID, process name, command or signal can travel.
+export interface TerminatePortProcessesRequest {
+  snapshotId: string
+  targetIds: readonly string[]
+}
+
+export interface TerminatePortProcessesResult {
+  terminatedTargetIds: readonly string[]
+  alreadyExitedTargetIds: readonly string[]
+  failures: readonly { targetId: string; code: string; message: string }[]
+}
+```
+
+Main retains **one** snapshot, expiring after `PORT_SNAPSHOT_TTL_MS` (5 min); a
+refresh invalidates it, a terminate consumes it. Immediately before killing,
+Main revalidates the PID's start time and owned bindings against a fresh
+inspection, and reports success only after a further inspection proves the
+snapshotted bindings are gone. `taskkill /PID <pid> /F` exactly — never `/IM`,
+never `/T`, never elevation.
+
+---
+
+## 6. IPC channel registry
+
+```ts
+export const IPC = {
+  terminal: {
+    create: 'terminal:create',
+    write: 'terminal:write',
+    resize: 'terminal:resize',
+    kill: 'terminal:kill',
+    profiles: 'terminal:profiles',
+    data: 'terminal:data',
+    exit: 'terminal:exit'
+  },
+  settings: {
+    get: 'settings:get',
+    update: 'settings:update'
+  },
+  workspace: {
+    list: 'workspace:list',
+    get: 'workspace:get',
+    save: 'workspace:save',
+    delete: 'workspace:delete'
+  },
+  git: {
+    inspect: 'git:inspect'
+  },
+  ports: {
+    list: 'ports:list',
+    terminate: 'ports:terminate', // the only destructive channel there is
+    open: 'ports:open' // Main → renderer: the native File → Port… menu entry
+  }
+} as const
+```
+
+No arbitrary channel strings scattered through the codebase.
+
+---
+
+## 7. Renderer API contract — `window.gitdeck`
+
+Request/response members resolve to a `Result` rather than rejecting. This is
+forced by the platform, not a preference: Electron's contextBridge rebuilds a
+rejected `Error` in the renderer's world and keeps only the standard fields, so
+a custom `code` property is silently dropped and the renderer is left matching
+on message text. Verified end-to-end in Phase 2. A plain object survives the
+bridge intact.
+
+```ts
+interface GitDeckApi {
+  terminal: {
+    create(request: TerminalCreateRequest): Promise<Result<TerminalSessionInfo, IpcError>>
+    // Added in Phase 5: the shell picker must render a list it did not compute,
+    // and Main is the only place that knows what is installed.
+    profiles(): Promise<Result<readonly AvailableShellProfile[], IpcError>>
+    write(sessionId: string, data: string): void
+    resize(sessionId: string, cols: number, rows: number): void
+    kill(sessionId: string): Promise<Result<null, IpcError>>
+    onData(callback: TerminalDataCallback): Unsubscribe
+    onExit(callback: TerminalExitCallback): Unsubscribe
+  }
+  workspace: {
+    list(): Promise<Result<readonly WorkspaceSummary[], IpcError>>
+    get(id: string): Promise<Result<Workspace, IpcError>>
+    // Takes an input, not a Workspace: `version`, `createdAt` and `updatedAt`
+    // are stamped in Main. A renderer able to set `updatedAt` could make a
+    // stale workspace look newer than the one that replaced it.
+    save(input: WorkspaceInput): Promise<Result<Workspace, IpcError>>
+    delete(id: string): Promise<Result<null, IpcError>>
+  }
+  git: {
+    // Every "nothing to show" case — outside a repository, git not installed,
+    // output unreadable — answers Ok(null). The renderer has nothing to
+    // distinguish and so nothing to report on a poll interval.
+    inspect(path: string): Promise<Result<GitRepositoryStatus | null, IpcError>>
+  }
+  settings: {
+    get(): Promise<Result<AppSettings, IpcError>>
+    update(patch: AppSettingsPatch): Promise<Result<AppSettings, IpcError>>
+  }
+  ports: {
+    // Phase 12. `terminate` takes only Main-minted capabilities: there is no
+    // member anywhere on this API that accepts a PID, a process name, a
+    // signal or a command, and no generic kill may ever be added.
+    list(): Promise<Result<PortSnapshot, IpcError>>
+    terminate(
+      request: TerminatePortProcessesRequest
+    ): Promise<Result<TerminatePortProcessesResult, IpcError>>
+    onOpen(callback: () => void): Unsubscribe
+  }
+}
+```
+
+Never expose `ipcRenderer` or raw Electron objects.
+
+---
+
+## 8. Renderer state strategy
+
+Zustand, one store per feature. No single global store.
+
+```text
+terminalStore · workspaceStore · gitStore · settingsStore · portsStore · uiStore
+```
+
+```ts
+interface TerminalUiState {
+  sessions: Record<string, TerminalSessionInfo>
+  order: string[]
+  activeSessionId: string | null
+}
+```
+
+Never store xterm `Terminal` objects in Zustand — they live in component refs.
+
+---
+
+## 9. Errors
+
+```ts
+class ShellNotFoundError extends Error {}
+class TerminalSessionNotFoundError extends Error {}
+class WorkspaceNotFoundError extends Error {}
+class InvalidWorkspaceError extends Error {}
+class GitNotAvailableError extends Error {}
+// Phase 12
+class PortInspectionError extends Error {}
+class PortSnapshotStaleError extends Error {} // stale modal → stable answer: refresh
+class InvalidPortRequestError extends Error {} // unknown/blocked capability — rejected whole
+class PortAccessDeniedError extends Error {} // per-target failure, never a reason to elevate
+```
+
+IPC handlers convert errors to serializable responses. The renderer never receives a native `Error` carrying internal Electron state.
+
+---
+
+## 10. Logging
+
+```ts
+interface Logger {
+  debug(message: string, meta?: unknown): void
+  info(message: string, meta?: unknown): void
+  warn(message: string, meta?: unknown): void
+  error(message: string, meta?: unknown): void
+}
+```
+
+Log: terminal create/exit · workspace load/save · shell detection failure · Git command failure · unexpected IPC errors.
+
+Never log full environment variables.
+
+---
+
+## 11. Security baseline
+
+```ts
+webPreferences: {
+  preload,
+  nodeIntegration: false,
+  contextIsolation: true,
+  sandbox: true
+}
+```
+
+- Do not expose filesystem APIs to the renderer.
+- Validate all IPC input.
+- Never create a generic `window.exec(command)` endpoint — expose intent-specific operations only.
+
+---
+
+## 12. Testing strategy
+
+| Level | Targets |
+|---|---|
+| **Unit** | domain logic · `TerminalManager` with fake `PtyFactory` · workspace serialization · shell profile selection · Git parser · Zustand transitions |
+| **Integration** | IPC handler ↔ service · persistence adapter · Git CLI adapter · shell detector |
+| **E2E** | Playwright for Electron — start app, create terminal, `echo hello`, second terminal, switch tabs, close, save workspace, restart, restore |
+
+---
+
+## 13. Working rules for each implementation session
+
+**Before:** read this file plus the one phase plan · list files expected to change · do not implement later-phase features · preserve public interfaces.
+
+**During:** small commits · strict TypeScript · tests alongside business logic · no giant files · no utility dumping grounds · explicit interfaces · no premature abstractions · never bypass preload isolation.
+
+**After:**
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+```
+
+Report:
+
+```text
+Implemented:
+Changed files:
+Tests:
+Known limitations:
+Out of scope:
+```
+
+---
+
+## 14. Commit convention
+
+```text
+chore: scaffold electron react application
+feat(terminal): add PTY abstraction
+feat(ipc): expose typed terminal API
+feat(ui): add terminal tabs
+feat(shell): detect windows shell profiles
+feat(workspace): add workspace persistence
+feat(git): add read-only repository status
+build: package windows installer
+```
+
+Avoid: `finish app` · `various changes` · `fix stuff` · `big update`.

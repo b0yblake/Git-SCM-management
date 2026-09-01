@@ -1,0 +1,316 @@
+@import './terminal.css';
+@import './workspace.css';
+@import './git.css';
+@import './ports.css';
+
+/*
+ * One place for colour and spacing. Every other stylesheet reads from here, so
+ * a theme change is a change to this block rather than a search for hex codes.
+ */
+:root {
+  color-scheme: dark;
+
+  --surface: #1e1e1e;
+  --surface-raised: #202020;
+  --surface-sunken: #181818;
+  --surface-control: #2b2b2b;
+  --surface-control-hover: #3a3a3a;
+
+  --border: #333;
+  --border-strong: #3c3c3c;
+
+  --text: #e6e6e6;
+  --text-muted: #9a9a9a;
+  --text-faint: #8a8a8a;
+  --text-disabled: #6a6a6a;
+
+  --accent: #4a9eff;
+  --danger: #f0857d;
+  --danger-surface: #3a2020;
+  --warning: #e6c07b;
+  --warning-surface: #3a3320;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+
+  --radius: 4px;
+  --font-ui: 'Segoe UI', system-ui, sans-serif;
+  --font-small: 0.8125rem;
+  --font-tiny: 0.75rem;
+
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Nothing is reachable by mouse alone, so focus has to be visible. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell__side {
+  display: flex;
+  flex-direction: column;
+  /* A rail, not "as wide as whatever is inside it" — the settings select was
+     stretching the whole column to twice this. */
+  width: 17rem;
+  flex: none;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.app-shell__side .workspace-panel {
+  flex: 1;
+  min-height: 0;
+  border-right: none;
+}
+
+.app-shell__status {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--text-muted);
+}
+
+.app-shell__status--error {
+  color: var(--danger);
+}
+
+/* An empty pane should explain itself rather than sit blank. */
+.empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.empty-state__title {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.empty-state__hint {
+  margin: 0;
+  max-width: 24rem;
+  color: var(--text-faint);
+  font-size: var(--font-small);
+  line-height: 1.45;
+}
+
+.empty-state kbd {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface-control);
+  font-family: inherit;
+  font-size: var(--font-tiny);
+}
+
+.toast-host {
+  position: fixed;
+  right: var(--space-3);
+  bottom: 2.4rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 26rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-control);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 45%);
+  font-size: var(--font-small);
+}
+
+.toast--error {
+  border-color: var(--danger);
+  background: var(--danger-surface);
+  color: var(--danger);
+}
+
+.toast__message {
+  flex: 1;
+}
+
+.toast__dismiss {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 45%);
+}
+
+.dialog {
+  min-width: 20rem;
+  max-width: 28rem;
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 50%);
+}
+
+.dialog__title {
+  margin: 0 0 var(--space-3);
+  line-height: 1.45;
+}
+
+.dialog__actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.dialog__actions button,
+.settings-screen button {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface-control);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dialog__actions button:hover {
+  background: var(--surface-control-hover);
+}
+
+.context-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+}
+
+.context-menu {
+  position: fixed;
+  min-width: 12rem;
+  margin: 0;
+  padding: var(--space-1) 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: #252526;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+  list-style: none;
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  background: transparent;
+  color: #d4d4d4;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu button:hover,
+.context-menu button:focus-visible {
+  background: #04395e;
+}
+
+.settings-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.settings-screen h2 {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-screen > label {
+  color: var(--text-muted);
+  font-size: var(--font-small);
+}
+
+.settings-screen label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text);
+}
+
+.settings-screen input[type='number'],
+.settings-screen select {
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: #1a1a1a;
+  color: var(--text);
+  font: inherit;
+}
+
+.settings-screen__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--font-tiny);
+}

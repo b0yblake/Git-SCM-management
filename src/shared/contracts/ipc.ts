@@ -1,0 +1,76 @@
+/**
+ * The single source of truth for IPC channel names (ARCHITECTURE.md §6).
+ *
+ * No channel string may appear anywhere else in the codebase — `ipc.spec.ts`
+ * enforces that by scanning the source tree.
+ */
+export const IPC = {
+  terminal: {
+    create: 'terminal:create',
+    write: 'terminal:write',
+    resize: 'terminal:resize',
+    kill: 'terminal:kill',
+    profiles: 'terminal:profiles',
+    data: 'terminal:data',
+    exit: 'terminal:exit'
+  },
+
+  settings: {
+    get: 'settings:get',
+    update: 'settings:update'
+  },
+
+  workspace: {
+    list: 'workspace:list',
+    get: 'workspace:get',
+    save: 'workspace:save',
+    delete: 'workspace:delete'
+  },
+
+  git: {
+    inspect: 'git:inspect'
+  },
+
+  ports: {
+    list: 'ports:list',
+    terminate: 'ports:terminate',
+    /** One-way Main → renderer: the native File → Port… menu entry. */
+    open: 'ports:open'
+  }
+} as const
+
+/**
+ * A failure crossing IPC. Deliberately just two strings: a stack trace or an
+ * absolute path would leak Main-process internals into the renderer
+ * (ARCHITECTURE.md §9).
+ */
+export interface IpcError {
+  readonly code: string
+  readonly message: string
+}
+
+export const IPC_ERROR_CODES = {
+  invalidRequest: 'INVALID_REQUEST',
+  internal: 'INTERNAL_ERROR'
+} as const
+
+/**
+ * Upper bound on terminal dimensions. A resize is a trusted-looking number
+ * arriving from the renderer; an unbounded one reaches `node-pty` and the OS.
+ */
+export const MAX_TERMINAL_DIMENSION = 1000
+
+export interface TerminalWritePayload {
+  readonly sessionId: string
+  readonly data: string
+}
+
+export interface TerminalResizePayload {
+  readonly sessionId: string
+  readonly cols: number
+  readonly rows: number
+}
+
+export interface TerminalKillPayload {
+  readonly sessionId: string
+}

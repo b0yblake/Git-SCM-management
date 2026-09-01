@@ -1,0 +1,148 @@
+/* Ports modal (Phase 12). Builds on the shared .dialog primitives. */
+
+.ports-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(44rem, calc(100vw - 4rem));
+  max-width: none;
+  max-height: calc(100vh - 6rem);
+}
+
+.ports-modal__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ports-modal__title {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ports-modal__header button,
+.ports-modal__filter,
+.ports-modal .dialog__actions button {
+  font-size: var(--font-small);
+}
+
+.ports-modal__header button {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface-control);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ports-modal__header button:hover {
+  background: var(--surface-control-hover);
+}
+
+.ports-modal__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-small);
+}
+
+.ports-modal__filter {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.ports-modal__table-wrap {
+  overflow: auto;
+  min-height: 8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ports-modal__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-small);
+}
+
+.ports-modal__table th,
+.ports-modal__table td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ports-modal__table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.ports-modal__row--blocked {
+  color: var(--text-disabled);
+}
+
+.ports-modal__name {
+  display: block;
+}
+
+.ports-modal__blocked-reason {
+  display: block;
+  color: var(--text-faint);
+  font-size: var(--font-tiny);
+}
+
+.ports-modal__bindings {
+  font-family: Consolas, monospace;
+}
+
+.ports-modal__empty,
+.ports-modal__error {
+  margin: 0;
+  padding: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-small);
+}
+
+.ports-modal__error {
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-surface);
+  color: var(--danger);
+}
+
+.ports-modal__confirm-warning {
+  margin: 0;
+}
+
+.ports-modal__confirm-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  overflow: auto;
+  max-height: 14rem;
+  font-size: var(--font-small);
+}
+
+.ports-modal__feedback {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-small);
+}
+
+.ports-modal__feedback-row--terminated {
+  color: var(--text-muted);
+}
+
+.ports-modal__feedback-row--already-exited {
+  color: var(--text-faint);
+}
+
+.ports-modal__feedback-row--failed {
+  color: var(--danger);
+}
