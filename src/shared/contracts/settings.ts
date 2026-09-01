@@ -55,9 +55,21 @@ export interface AppSettings {
    * user's, not ours.
    */
   readonly confirmBeforeClosingRunningTerminal: boolean
+
+  /**
+   * Phase 16. One anonymous GET to GitHub Releases at startup, at most daily.
+   * Disclosed in the README; turning it off makes zero requests.
+   */
+  readonly checkForUpdatesOnStartup: boolean
+
+  /** Phase 16. Version the user chose to skip; `null` when none. */
+  readonly skippedUpdateVersion: string | null
 }
 
 export type AppSettingsPatch = Partial<Omit<AppSettings, 'version'>>
+
+/** The settings store's schema version, recorded in storage.json (Phase 14). */
+export const SETTINGS_VERSION = 1
 
 /** Below 8 is unreadable, above 32 fits almost nothing on screen. */
 export const MIN_FONT_SIZE = 8
@@ -72,7 +84,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   runStartupCommandsOnRestore: false,
   terminalFontSize: 14,
   terminalCursorBlink: true,
-  confirmBeforeClosingRunningTerminal: true
+  confirmBeforeClosingRunningTerminal: true,
+  checkForUpdatesOnStartup: true,
+  skippedUpdateVersion: null
 }
 
 export const isValidFontSize = (value: unknown): value is number =>

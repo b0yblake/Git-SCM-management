@@ -466,7 +466,65 @@ Out of scope:
 
 ---
 
-## 14. Commit convention
+## 14. Storage layout (Phase 14)
+
+Every persisted path is minted by `src/main/bootstrap/storagePaths.ts` and
+nowhere else. Features receive their paths from the composition root and no
+longer know their own filenames.
+
+```text
+%APPDATA%\GitDeck\                     app.getPath('userData')
+├── settings.json                      settings store   (schema v1)
+├── storage.json                       manifest — bootstrap-owned bookkeeping
+├── workspaces\<workspace-id>.json     one file per workspace (schema v1)
+├── backups\                           pre-migration copies (Phase 15)
+└── *.corrupt-<timestamp>              quarantined unreadable files
+
+%LOCALAPPDATA%\GitDeck\logs\           app.getPath('logs')
+└── gitdeck.log                        rotating operational log
+```
+
+Rules:
+
+1. Writes are atomic (write temp, rename). Reads are tolerant: a corrupt
+   settings/workspace file is **quarantined** — renamed to
+   `<name>.corrupt-<timestamp>` once, best-effort — then defaults/skip apply.
+   Startup is never blocked by storage.
+2. **Future-version carve-out:** a file whose integer `version` is greater
+   than the store's current version was written by a newer GitDeck. It is
+   never quarantined and never rewritten — settings are read per-field,
+   workspace files are skipped with a log line — so a downgraded user's data
+   survives until they upgrade again.
+3. `storage.json` records `firstRunAt`, `lastRunAt`, `lastRunAppVersion` and
+   per-store schema versions. It is not a feature: no IPC, renderer never
+   sees it, unknown fields are carried through a rewrite untouched.
+4. Terminal input/output is never persisted. The uninstaller never deletes
+   `userData`; removal is a manual `%APPDATA%\GitDeck` deletion.
+
+### Compatibility policy (Phase 15)
+
+1. **Old data always loads.** A newer GitDeck reads every file any released
+   GitDeck ever wrote — proven by `tests/fixtures/storage/<version>/` golden
+   fixtures, one directory per release, append-only.
+2. **Additions are not migrations.** A new field with a safe default is
+   handled by normalize-style defaulting and does not bump a store version.
+   The version bumps only when meaning or shape changes.
+3. **Migrations are pure, forward-only, stepwise** (`v(n) → v(n+1)`,
+   `bootstrap/migrations.ts`), run in Main inside the store on load. A gap or
+   a throwing step quarantines rather than guesses. The renderer never sees a
+   pre-migration shape.
+4. **Backup before the first migrated write:** the original bytes land in
+   `backups/` (`settings.v<n>.json`, `workspaces/<id>.v<n>.json`), once per
+   version step, never overwritten, never deleted by later runs.
+5. **Downgrades degrade, never destroy** (the §14 carve-out). Honest limit:
+   an older GitDeck that *writes* drops newer-only fields; the backup is the
+   recovery path.
+6. A store's migration step, its `*_VERSION` bump and its parser update are
+   one change, shipped together.
+
+---
+
+## 15. Commit convention
 
 ```text
 chore: scaffold electron react application

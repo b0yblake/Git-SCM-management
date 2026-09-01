@@ -1,0 +1,23 @@
+{
+  "id": "ws_11111111-2222-4333-8444-555555555555",
+  "name": "web-app",
+  "version": 1,
+  "terminals": [
+    {
+      "id": "term_11111111-2222-4333-8444-555555555555",
+      "title": "API server",
+      "cwd": "C:\\work\\api",
+      "shellProfileId": "git-bash",
+      "startupCommand": "npm run dev"
+    },
+    {
+      "id": "term_22222222-3333-4444-8555-666666666666",
+      "title": "Scratch",
+      "cwd": "C:\\work",
+      "shellProfileId": "powershell"
+    }
+  ],
+  "activeTerminalId": "term_11111111-2222-4333-8444-555555555555",
+  "createdAt": 1756700000000,
+  "updatedAt": 1756710000000
+}

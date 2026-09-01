@@ -1,14 +1,33 @@
 import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Logger } from '@main/bootstrap/logger'
+import { backupFileOnce, runMigrations, type StoreMigration } from '@main/bootstrap/migrations'
+import { quarantineFile } from '@main/bootstrap/quarantine'
 import { InvalidWorkspaceError, WorkspaceNotFoundError } from '../domain/errors'
-import { isWorkspaceId, parseWorkspace, type Workspace } from '../domain/Workspace'
+import {
+  isWorkspaceId,
+  parseWorkspace,
+  WORKSPACE_VERSION,
+  type Workspace
+} from '../domain/Workspace'
 import type { WorkspaceRepository } from '../domain/WorkspaceRepository'
+
+/**
+ * A file written by a newer GitDeck is not corruption (Phase 14 carve-out): a
+ * user who downgraded must find it intact when they upgrade again. Internal to
+ * this repository — callers see it translated, never quarantined.
+ */
+class NewerWorkspaceFileError extends Error {}
 
 export interface JsonWorkspaceRepositoryOptions {
   /** `userData/workspaces` in the app; a temp directory in tests. */
   readonly directory: string
   readonly logger: Logger
+  /** Phase 15 — pure steps up to `currentVersion`; empty in production today. */
+  readonly migrations?: readonly StoreMigration[]
+  readonly currentVersion?: number
+  /** Where each pre-migration original is preserved, once per version step. */
+  readonly backupDir?: string
 }
 
 const FILE_SUFFIX = '.json'
@@ -25,7 +44,10 @@ const isMissing = (error: unknown): boolean => (error as NodeJS.ErrnoException).
  */
 export const createJsonWorkspaceRepository = ({
   directory,
-  logger
+  logger,
+  migrations = [],
+  currentVersion = WORKSPACE_VERSION,
+  backupDir
 }: JsonWorkspaceRepositoryOptions): WorkspaceRepository => {
   /**
    * The id becomes a filename, which makes it an attack surface: an unchecked
@@ -51,6 +73,47 @@ export const createJsonWorkspaceRepository = ({
       raw = JSON.parse(text)
     } catch {
       throw new InvalidWorkspaceError('the file is not valid JSON')
+    }
+
+    if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+      const declared = (raw as Record<string, unknown>)['version']
+      if (typeof declared === 'number' && Number.isInteger(declared) && declared >= 1) {
+        if (declared > currentVersion) {
+          throw new NewerWorkspaceFileError(
+            `the file was written by a newer GitDeck (version ${declared})`
+          )
+        }
+        if (declared < currentVersion) {
+          // Phase 15: migrate → backup the original → write back atomically.
+          // A failed chain surfaces as InvalidWorkspaceError so the callers
+          // quarantine it exactly like any other unreadable file.
+          let migrated: Record<string, unknown>
+          try {
+            migrated = runMigrations(
+              raw as Record<string, unknown>,
+              migrations,
+              currentVersion
+            ).raw
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            throw new InvalidWorkspaceError(message)
+          }
+          if (backupDir) {
+            backupFileOnce(text, join(backupDir, `${id}.v${declared}.json`), logger)
+          }
+          try {
+            mkdirSync(directory, { recursive: true })
+            const temporary = join(directory, `.${id}.tmp`)
+            writeFileSync(temporary, JSON.stringify(migrated, null, 2), 'utf8')
+            renameSync(temporary, path)
+            logger.info('workspace migrated', { workspaceId: id, from: declared })
+          } catch (error) {
+            // The healthy old file stays; the next read migrates again.
+            logger.warn('failed to write back migrated workspace', { workspaceId: id, error })
+          }
+          raw = migrated
+        }
+      }
     }
 
     const workspace = parseWorkspace(raw)
@@ -85,14 +148,33 @@ export const createJsonWorkspaceRepository = ({
         try {
           workspaces.push(readAt(join(directory, entry), id))
         } catch (error) {
+          // Vanished between readdir and read — already in the listed state.
+          if (error instanceof WorkspaceNotFoundError) continue
+          if (error instanceof NewerWorkspaceFileError) {
+            logger.info('skipping workspace written by a newer GitDeck', { workspaceId: id })
+            continue
+          }
           logger.warn('skipping unreadable workspace', { workspaceId: id, error })
+          quarantineFile(join(directory, entry), logger)
         }
       }
 
       return workspaces
     },
 
-    get: (id: string): Workspace => readAt(fileFor(id), id),
+    get: (id: string): Workspace => {
+      const path = fileFor(id)
+      try {
+        return readAt(path, id)
+      } catch (error) {
+        if (error instanceof NewerWorkspaceFileError) {
+          // Translated, not quarantined: the file is valid, just not ours yet.
+          throw new InvalidWorkspaceError(error.message)
+        }
+        if (error instanceof InvalidWorkspaceError) quarantineFile(path, logger)
+        throw error
+      }
+    },
 
     save: (workspace: Workspace): void => {
       const path = fileFor(workspace.id)

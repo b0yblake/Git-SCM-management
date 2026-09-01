@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "defaultShellProfileId": "git-bash",
+  "activeWorkspaceId": "ws_11111111-2222-4333-8444-555555555555",
+  "activeTerminalDefinitionId": "term_11111111-2222-4333-8444-555555555555",
+  "restoreLastWorkspace": true,
+  "runStartupCommandsOnRestore": false,
+  "terminalFontSize": 16,
+  "terminalCursorBlink": false,
+  "confirmBeforeClosingRunningTerminal": true
+}

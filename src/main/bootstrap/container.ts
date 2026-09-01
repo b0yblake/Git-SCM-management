@@ -1,7 +1,8 @@
 import { statSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
 import { app } from 'electron'
+import { SETTINGS_VERSION } from '@shared/contracts/settings'
+import { WORKSPACE_VERSION } from '@shared/contracts/workspace'
 import { createGitService, type GitService } from '../features/git/public'
 import { createPortService, type PortService } from '../features/ports/public'
 import { createSettingsService, type SettingsService } from '../features/settings/public'
@@ -15,6 +16,8 @@ import {
 import { createWorkspaceService, type WorkspaceService } from '../features/workspace/public'
 import { combineSinks, createFileSink } from './fileSink'
 import { consoleSink, createLogger, type Logger } from './logger'
+import { recordRun } from './storageManifest'
+import { createStoragePaths } from './storagePaths'
 
 /**
  * Composition root. Feature services are constructed here and handed to the IPC
@@ -48,14 +51,22 @@ const directoryExists = (path: string): boolean => {
 }
 
 export const createContainer = (): AppContainer => {
+  // Every persisted path is minted here and nowhere else (Phase 14).
+  const paths = createStoragePaths(app.getPath('userData'), app.getPath('logs'))
+
   // The console sink is invisible in a packaged app, so production keeps a
   // file alongside it. `logs` is where Windows users and support already look.
-  const logger = createLogger(
-    combineSinks(consoleSink, createFileSink({ filePath: join(app.getPath('logs'), 'gitdeck.log') }))
-  )
-  const userData = app.getPath('userData')
-  const settings = createSettingsService(userData, logger)
-  const workspace = createWorkspaceService(userData, logger)
+  const logger = createLogger(combineSinks(consoleSink, createFileSink({ filePath: paths.logFile })))
+  const settings = createSettingsService(paths.settingsFile, paths.backupsDir, logger)
+  const workspace = createWorkspaceService(paths.workspacesDir, paths.workspaceBackupsDir, logger)
+
+  // Bookkeeping, not a feature: which app version ran, at which store schemas.
+  recordRun({
+    manifestFile: paths.manifestFile,
+    appVersion: app.getVersion(),
+    storeVersions: { settings: SETTINGS_VERSION, workspace: WORKSPACE_VERSION },
+    logger
+  })
 
   // Detected once at startup: a shell being installed mid-session is not worth
   // re-probing the filesystem on every terminal the user opens.

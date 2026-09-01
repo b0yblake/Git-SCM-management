@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createId } from '@shared/domain/ids'
+import type { StoreMigration } from '@main/bootstrap/migrations'
 import { createFakeLogger, type FakeLogger } from '@main/testing/FakeLogger'
 import { InvalidWorkspaceError, WorkspaceNotFoundError } from '../domain/errors'
 import type { Workspace } from '../domain/Workspace'
@@ -142,11 +143,15 @@ describe('list', () => {
     expect(logger.entriesAt('warn')).toHaveLength(1)
   })
 
-  it('skips a file written by a newer version', () => {
+  it('skips a file written by a newer version without warning or touching it', () => {
+    // Phase 14 carve-out: a newer file is not corruption. A user who
+    // downgraded must find it intact when they upgrade again.
     plant('wrong-version')
+    const before = readFileSync(join(directory, `${FIXTURE_ID}.json`), 'utf8')
 
     expect(repository().list()).toEqual([])
-    expect(logger.entriesAt('warn')).toHaveLength(1)
+    expect(logger.entriesAt('warn')).toEqual([])
+    expect(readFileSync(join(directory, `${FIXTURE_ID}.json`), 'utf8')).toBe(before)
   })
 
   it('skips a file that is missing required fields', () => {
@@ -197,6 +202,8 @@ describe('errors', () => {
     plant('wrong-version')
 
     expect(() => repository().get(FIXTURE_ID)).toThrow(/version 2/)
+    // Translated, not quarantined: the file is valid, just not ours yet.
+    expect(existsSync(join(directory, `${FIXTURE_ID}.json`))).toBe(true)
   })
 
   it('rejects a file whose contents declare a different id than its name', () => {
@@ -212,6 +219,93 @@ describe('errors', () => {
     expect(() => repository().get('../secret')).toThrow(InvalidWorkspaceError)
     expect(() => repository().get('..\\secret')).toThrow(InvalidWorkspaceError)
     expect(() => repository().get('settings')).toThrow(InvalidWorkspaceError)
+  })
+})
+
+describe('quarantine (Phase 14)', () => {
+  it('moves a corrupt file aside during list, bytes preserved', () => {
+    plant('corrupt')
+    const original = readFileSync(join(FIXTURES, 'corrupt.json'), 'utf8')
+
+    repository().list()
+
+    const quarantined = readdirSync(directory).find((name) =>
+      name.startsWith(`${FIXTURE_ID}.json.corrupt-`)
+    )
+    expect(quarantined).toBeDefined()
+    expect(readFileSync(join(directory, quarantined ?? ''), 'utf8')).toBe(original)
+  })
+
+  it('makes the list after a quarantine quiet', () => {
+    plant('corrupt')
+    repository().list()
+    logger = createFakeLogger()
+
+    expect(repository().list()).toEqual([])
+    expect(logger.entriesAt('warn')).toEqual([])
+  })
+
+  it('quarantines on get as well, so the next get is a clean miss', () => {
+    plant('corrupt')
+
+    expect(() => repository().get(FIXTURE_ID)).toThrow(InvalidWorkspaceError)
+    expect(() => repository().get(FIXTURE_ID)).toThrow(WorkspaceNotFoundError)
+  })
+})
+
+describe('migrations (Phase 15)', () => {
+  const ADD_FLAG: readonly StoreMigration[] = [
+    { from: 1, migrate: (raw) => ({ ...raw, migratedFlag: true }) }
+  ]
+
+  const migrating = (migrations: readonly StoreMigration[]) =>
+    createJsonWorkspaceRepository({
+      directory,
+      logger,
+      migrations,
+      currentVersion: 2,
+      backupDir: join(directory, '.backups')
+    })
+
+  /**
+   * Production pairs a real migration with the matching `parseWorkspace`
+   * update in one change, so a migrated file always parses. With a test-only
+   * v2 the strict v1 parser rejects the result — which is exactly what lets
+   * this test prove the full pipeline order: migrate, back up the original,
+   * write back, then parse.
+   */
+  it('backs up the original and writes the migrated shape back before parsing', () => {
+    plant('valid')
+    const original = readFileSync(join(FIXTURES, 'valid.json'), 'utf8')
+
+    migrating(ADD_FLAG).list()
+
+    expect(readFileSync(join(directory, '.backups', `${FIXTURE_ID}.v1.json`), 'utf8')).toBe(
+      original
+    )
+    const rewritten = readdirSync(directory).find((name) =>
+      name.startsWith(`${FIXTURE_ID}.json.corrupt-`)
+    )
+    const disk = JSON.parse(readFileSync(join(directory, rewritten ?? ''), 'utf8')) as Record<
+      string,
+      unknown
+    >
+    expect(disk['version']).toBe(2)
+    expect(disk['migratedFlag']).toBe(true)
+  })
+
+  it('a gap in the chain quarantines the file and never backs up or rewrites', () => {
+    plant('valid')
+    const original = readFileSync(join(FIXTURES, 'valid.json'), 'utf8')
+
+    expect(migrating([]).list()).toEqual([])
+
+    expect(existsSync(join(directory, '.backups'))).toBe(false)
+    const quarantined = readdirSync(directory).find((name) =>
+      name.startsWith(`${FIXTURE_ID}.json.corrupt-`)
+    )
+    expect(readFileSync(join(directory, quarantined ?? ''), 'utf8')).toBe(original)
+    expect(logger.entriesAt('warn')).toHaveLength(1)
   })
 })
 

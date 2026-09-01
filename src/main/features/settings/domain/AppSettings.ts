@@ -51,7 +51,12 @@ export const normalizeSettings = (raw: unknown): AppSettings => {
     confirmBeforeClosingRunningTerminal: bool(
       record['confirmBeforeClosingRunningTerminal'],
       DEFAULT_SETTINGS.confirmBeforeClosingRunningTerminal
-    )
+    ),
+    checkForUpdatesOnStartup: bool(
+      record['checkForUpdatesOnStartup'],
+      DEFAULT_SETTINGS.checkForUpdatesOnStartup
+    ),
+    skippedUpdateVersion: definitionId(record['skippedUpdateVersion'])
   }
 }
 
