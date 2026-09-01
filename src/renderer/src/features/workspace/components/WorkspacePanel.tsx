@@ -1,11 +1,18 @@
 import { useCallback, useState } from 'react'
 import type { Workspace, WorkspaceInput } from '@shared/contracts/workspace'
-import { useShellProfiles } from '../../terminal/public'
+import { createId } from '@shared/domain/ids'
+import { useToastStore } from '../../../shared/store/toastStore'
+import { useShellProfiles, useTerminalStore } from '../../terminal/public'
 import { useOpenWorkspace } from '../hooks/useOpenWorkspace'
 import { useRestoreOnStartup } from '../hooks/useRestoreOnStartup'
 import { useWorkspaces } from '../hooks/useWorkspaces'
 import { WorkspaceEditor } from './WorkspaceEditor'
 import { WorkspaceSidebar } from './WorkspaceSidebar'
+
+export interface WorkspacePanelProps {
+  /** Called after an open/re-open succeeds so the shell can reveal the terminals. */
+  readonly onWorkspaceOpened?: () => void
+}
 
 /** Strips what Main owns: a caller never supplies version or timestamps. */
 const toInput = (workspace: Workspace): WorkspaceInput => ({
@@ -23,13 +30,14 @@ const toInput = (workspace: Workspace): WorkspaceInput => ({
  * The components below it are presentational; every IPC call happens in the
  * hooks this component uses. Mirrors `TerminalDeck` for the terminal feature.
  */
-export const WorkspacePanel = (): React.JSX.Element => {
+export const WorkspacePanel = ({ onWorkspaceOpened }: WorkspacePanelProps): React.JSX.Element => {
   const workspaces = useWorkspaces()
   const opener = useOpenWorkspace()
   // Owns what the window shows at launch: a restored workspace, or one shell.
-  useRestoreOnStartup()
+  useRestoreOnStartup(opener.open)
   const shells = useShellProfiles()
   const [editing, setEditing] = useState<WorkspaceInput | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   const startEdit = useCallback(
     async (workspaceId: string) => {
@@ -41,24 +49,63 @@ export const WorkspacePanel = (): React.JSX.Element => {
 
   const saveDraft = useCallback(
     async (input: WorkspaceInput) => {
-      const saved = await workspaces.save(input)
-      // A rejected save keeps the editor open, so the user does not lose the draft.
-      if (saved) setEditing(null)
+      setIsSaving(true)
+      try {
+        const saved = await workspaces.save(input)
+        // A rejected save keeps the editor open, so the user does not lose the draft.
+        if (saved) {
+          setEditing(null)
+          useToastStore.getState().push('info', `Saved workspace “${saved.name}”.`)
+        }
+      } finally {
+        setIsSaving(false)
+      }
     },
     [workspaces]
   )
 
+  const createDraft = (): void => {
+    const terminalState = useTerminalStore.getState()
+    const activeSession = terminalState.activeSessionId
+      ? terminalState.sessions[terminalState.activeSessionId]
+      : undefined
+    const definitionId = createId('term')
+    const shellProfileId =
+      activeSession?.definition.shellProfileId ??
+      shells.defaultShellProfileId ??
+      shells.profiles[0]?.id ??
+      'powershell'
+
+    setEditing({
+      name: '',
+      terminals: [
+        {
+          id: definitionId,
+          title: activeSession?.definition.title ?? 'Terminal',
+          cwd: activeSession?.definition.cwd ?? '',
+          shellProfileId
+        }
+      ],
+      activeTerminalId: definitionId
+    })
+  }
+
+  const openWorkspace = async (workspaceId: string): Promise<void> => {
+    if (await opener.open(workspaceId)) onWorkspaceOpened?.()
+  }
+
   return (
-    <div className="workspace-panel">
+    <div className={`workspace-panel${editing ? ' workspace-panel--editing' : ''}`}>
       <WorkspaceSidebar
         workspaces={workspaces.summaries}
         activeWorkspaceId={workspaces.activeWorkspaceId}
         notices={opener.notices}
         isLoading={workspaces.isLoading}
-        onOpen={(id) => void opener.open(id)}
+        openingWorkspaceId={opener.openingWorkspaceId}
+        onOpen={(id) => void openWorkspace(id)}
         onEdit={(id) => void startEdit(id)}
         onDelete={(id) => void workspaces.remove(id)}
-        onCreate={() => setEditing({ name: '', terminals: [] })}
+        onCreate={createDraft}
       />
 
       {editing && (
@@ -67,6 +114,8 @@ export const WorkspacePanel = (): React.JSX.Element => {
           key={editing.id ?? 'new'}
           initial={editing}
           profiles={shells.profiles}
+          defaultShellProfileId={shells.defaultShellProfileId}
+          isSaving={isSaving}
           onSave={(input) => void saveDraft(input)}
           onCancel={() => setEditing(null)}
         />

@@ -110,6 +110,25 @@ describe('save', () => {
     expect(sent).not.toHaveProperty('createdAt')
     expect(sent).not.toHaveProperty('updatedAt')
   })
+
+  it('unowns a live session when its definition is removed by an explicit save', async () => {
+    api.seedWorkspaces(
+      workspace({
+        terminals: [
+          ...INPUT.terminals,
+          { id: 'term_2', title: 'Frontend', cwd: 'C:\\b', shellProfileId: 'cmd' }
+        ]
+      })
+    )
+    useWorkspaceStore.getState().bind(WS_ID, 'term_1', 'sess_1')
+    useWorkspaceStore.getState().bind(WS_ID, 'term_2', 'sess_2')
+    const { result } = mount()
+
+    await act(() => result.current.save({ ...INPUT, id: WS_ID }))
+
+    expect(useWorkspaceStore.getState().bindings).toEqual({ term_1: 'sess_1' })
+    expect(useWorkspaceStore.getState().workspaceByDefinitionId).toEqual({ term_1: WS_ID })
+  })
 })
 
 describe('delete', () => {
@@ -135,6 +154,7 @@ describe('delete', () => {
 
     expect(result.current.activeWorkspaceId).toBeNull()
     expect(api.storedSettings().activeWorkspaceId).toBeNull()
+    expect(api.storedSettings().activeTerminalDefinitionId).toBeNull()
   })
 
   /** The definition is what was thrown away — the running shells are the user's work. */
@@ -145,6 +165,17 @@ describe('delete', () => {
 
     await act(() => result.current.remove(WS_ID))
 
+    expect(api.calls.kill).toEqual([])
+  })
+
+  it('forgets deleted workspace ownership while leaving the live terminal untouched', async () => {
+    api.seedWorkspaces(workspace())
+    useWorkspaceStore.getState().bind(WS_ID, 'term_1', 'sess_1')
+    const { result } = mount()
+
+    await act(() => result.current.remove(WS_ID))
+
+    expect(useWorkspaceStore.getState().bindings).toEqual({})
     expect(api.calls.kill).toEqual([])
   })
 })

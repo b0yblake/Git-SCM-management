@@ -218,9 +218,17 @@ button {
   overflow: hidden;
 }
 
+.tool-drawer:has(.workspace-panel--editing) {
+  width: min(44rem, 100%);
+}
+
 .tool-drawer__panel {
   height: 100%;
   overflow: auto;
+}
+
+.tool-drawer__panel:has(.workspace-panel) {
+  overflow: hidden;
 }
 
 .tool-drawer__panel > * {

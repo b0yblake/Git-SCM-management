@@ -67,6 +67,12 @@ export const useWorkspaces = (): WorkspacesController => {
         return null
       }
       setLastError(null)
+      useWorkspaceStore
+        .getState()
+        .retainWorkspaceDefinitions(
+          result.value.id,
+          result.value.terminals.map((definition) => definition.id)
+        )
       await refresh()
       return result.value
     },
@@ -94,11 +100,16 @@ export const useWorkspaces = (): WorkspacesController => {
       }
 
       const store = useWorkspaceStore.getState()
+      store.forgetWorkspace(workspaceId)
       // Deleting the open workspace leaves its terminals running — they are the
       // user's live work, and the definition is what was thrown away.
       if (store.activeWorkspaceId === workspaceId) {
         store.setActiveWorkspaceId(null)
-        void window.gitdeck.settings.update({ activeWorkspaceId: null })
+        const remembered = await window.gitdeck.settings.update({
+          activeWorkspaceId: null,
+          activeTerminalDefinitionId: null
+        })
+        if (!remembered.ok) fail(remembered.error)
       }
       await refresh()
     },

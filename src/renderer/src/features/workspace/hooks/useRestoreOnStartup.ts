@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '@shared/contracts/settings'
 import { useTerminalStore } from '../../terminal/public'
-import { useOpenWorkspace, type OpenWorkspaceController } from './useOpenWorkspace'
+import type { OpenWorkspaceController } from './useOpenWorkspace'
 
 export type RestoreStatus = 'pending' | 'settled'
 
@@ -23,10 +23,11 @@ export interface RestoreController {
  * is not a restore, so opening one when there is nothing to restore does not
  * cross the line above.
  */
-export const useRestoreOnStartup = (): RestoreController => {
+export const useRestoreOnStartup = (
+  open: OpenWorkspaceController['open']
+): RestoreController => {
   const [status, setStatus] = useState<RestoreStatus>('pending')
   const [restoredWorkspace, setRestoredWorkspace] = useState(false)
-  const { open } = useOpenWorkspace()
 
   // Load-bearing: opening is asynchronous, so a re-render landing before it
   // resolves would still see an empty store and start everything again. This

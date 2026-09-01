@@ -25,7 +25,7 @@ export const App = (): React.JSX.Element => {
           <TerminalDeck />
           <aside className="tool-drawer" hidden={activeSection === 'terminals'}>
             <div className="tool-drawer__panel" hidden={activeSection !== 'workspaces'}>
-              <WorkspacePanel />
+              <WorkspacePanel onWorkspaceOpened={() => setActiveSection('terminals')} />
             </div>
             <div className="tool-drawer__panel" hidden={activeSection !== 'settings'}>
               <SettingsPanel />

@@ -1,5 +1,9 @@
 import { useId, useState } from 'react'
-import type { AvailableShellProfile, TerminalDefinition } from '@shared/contracts/terminal'
+import type {
+  AvailableShellProfile,
+  ShellProfileId,
+  TerminalDefinition
+} from '@shared/contracts/terminal'
 import type { WorkspaceInput } from '@shared/contracts/workspace'
 import { createId } from '@shared/domain/ids'
 import { TerminalDefinitionEditor } from './TerminalDefinitionEditor'
@@ -7,15 +11,20 @@ import { TerminalDefinitionEditor } from './TerminalDefinitionEditor'
 export interface WorkspaceEditorProps {
   readonly initial: WorkspaceInput
   readonly profiles: readonly AvailableShellProfile[]
+  readonly defaultShellProfileId?: ShellProfileId | null
+  readonly isSaving?: boolean
   readonly onSave: (input: WorkspaceInput) => void
   readonly onCancel: () => void
 }
 
-const newDefinition = (profiles: readonly AvailableShellProfile[]): TerminalDefinition => ({
+const newDefinition = (
+  profiles: readonly AvailableShellProfile[],
+  defaultShellProfileId?: ShellProfileId | null
+): TerminalDefinition => ({
   id: createId('term'),
   title: 'Terminal',
   cwd: '',
-  shellProfileId: profiles[0]?.id ?? 'powershell'
+  shellProfileId: defaultShellProfileId ?? profiles[0]?.id ?? 'powershell'
 })
 
 /**
@@ -55,6 +64,8 @@ const problemsWith = (draft: WorkspaceInput): string[] => {
 export const WorkspaceEditor = ({
   initial,
   profiles,
+  defaultShellProfileId,
+  isSaving = false,
   onSave,
   onCancel
 }: WorkspaceEditorProps): React.JSX.Element => {
@@ -84,10 +95,22 @@ export const WorkspaceEditor = ({
 
   return (
     <section className="workspace-editor" aria-label="Workspace editor">
+      <header className="workspace-editor__header">
+        <div>
+          <span>{initial.id ? 'Edit workspace' : 'New workspace'}</span>
+          <h2>{initial.id ? initial.name : 'Define your workspace'}</h2>
+        </div>
+        <button type="button" onClick={onCancel} disabled={isSaving} aria-label="Close editor">
+          ×
+        </button>
+      </header>
+
       <label htmlFor={`${id}-name`}>Workspace name</label>
       <input
         id={`${id}-name`}
         value={draft.name}
+        disabled={isSaving}
+        autoFocus
         onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
       />
 
@@ -97,6 +120,7 @@ export const WorkspaceEditor = ({
           definition={terminal}
           position={index + 1}
           profiles={profiles}
+          disabled={isSaving}
           onChange={(patch) => updateTerminal(index, patch)}
           onRemove={() =>
             setDraft((current) => ({
@@ -109,10 +133,14 @@ export const WorkspaceEditor = ({
 
       <button
         type="button"
+        disabled={isSaving}
         onClick={() =>
           setDraft((current) => ({
             ...current,
-            terminals: [...current.terminals, newDefinition(profiles)]
+            terminals: [
+              ...current.terminals,
+              newDefinition(profiles, defaultShellProfileId)
+            ]
           }))
         }
       >
@@ -128,10 +156,10 @@ export const WorkspaceEditor = ({
       )}
 
       <div className="workspace-editor__actions">
-        <button type="button" onClick={submit}>
-          Save workspace
+        <button type="button" onClick={submit} disabled={isSaving}>
+          {isSaving ? 'Saving…' : 'Save workspace'}
         </button>
-        <button type="button" onClick={onCancel}>
+        <button type="button" onClick={onCancel} disabled={isSaving}>
           Cancel
         </button>
       </div>

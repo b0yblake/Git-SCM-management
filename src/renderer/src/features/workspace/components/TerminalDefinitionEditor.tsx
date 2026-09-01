@@ -6,6 +6,7 @@ export interface TerminalDefinitionEditorProps {
   /** Only for labelling — the user counts from 1, the array from 0. */
   readonly position: number
   readonly profiles: readonly AvailableShellProfile[]
+  readonly disabled?: boolean
   readonly onChange: (patch: Partial<TerminalDefinition>) => void
   readonly onRemove: () => void
 }
@@ -21,6 +22,7 @@ export const TerminalDefinitionEditor = ({
   definition,
   position,
   profiles,
+  disabled = false,
   onChange,
   onRemove
 }: TerminalDefinitionEditorProps): React.JSX.Element => {
@@ -34,6 +36,7 @@ export const TerminalDefinitionEditor = ({
       <input
         id={`${id}-title`}
         value={definition.title}
+        disabled={disabled}
         onChange={(event) => onChange({ title: event.target.value })}
       />
 
@@ -41,6 +44,7 @@ export const TerminalDefinitionEditor = ({
       <input
         id={`${id}-cwd`}
         value={definition.cwd}
+        disabled={disabled}
         onChange={(event) => onChange({ cwd: event.target.value })}
       />
 
@@ -48,6 +52,7 @@ export const TerminalDefinitionEditor = ({
       <select
         id={`${id}-shell`}
         value={definition.shellProfileId}
+        disabled={disabled}
         onChange={(event) =>
           onChange({ shellProfileId: event.target.value as TerminalDefinition['shellProfileId'] })
         }
@@ -63,10 +68,16 @@ export const TerminalDefinitionEditor = ({
       <input
         id={`${id}-startup`}
         value={definition.startupCommand ?? ''}
+        disabled={disabled}
         onChange={(event) => onChange({ startupCommand: event.target.value })}
       />
 
-      <button type="button" onClick={onRemove} aria-label={`Remove terminal ${position}`}>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={`Remove terminal ${position}`}
+      >
         Remove
       </button>
     </fieldset>

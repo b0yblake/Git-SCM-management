@@ -7,6 +7,7 @@ export interface WorkspaceSidebarProps {
   readonly notices: readonly OpenNotice[]
   /** True until the first list arrives, so an empty list is not mistaken for none. */
   readonly isLoading: boolean
+  readonly openingWorkspaceId?: string | null
   readonly onOpen: (workspaceId: string) => void
   readonly onEdit: (workspaceId: string) => void
   readonly onDelete: (workspaceId: string) => void
@@ -23,6 +24,7 @@ export const WorkspaceSidebar = ({
   activeWorkspaceId,
   notices,
   isLoading,
+  openingWorkspaceId = null,
   onOpen,
   onEdit,
   onDelete,
@@ -31,7 +33,7 @@ export const WorkspaceSidebar = ({
   <nav className="workspace-sidebar" aria-label="Workspaces">
     <div className="workspace-sidebar__header">
       <h2>Workspaces</h2>
-      <button type="button" onClick={onCreate}>
+      <button type="button" onClick={onCreate} disabled={openingWorkspaceId !== null}>
         New workspace
       </button>
     </div>
@@ -50,45 +52,57 @@ export const WorkspaceSidebar = ({
       </div>
     ) : (
       <ul className="workspace-sidebar__list">
-        {workspaces.map((workspace) => (
-          <li
-            key={workspace.id}
-            className={
-              workspace.id === activeWorkspaceId
-                ? 'workspace-sidebar__item workspace-sidebar__item--active'
-                : 'workspace-sidebar__item'
-            }
-          >
-            <button
-              type="button"
-              className="workspace-sidebar__open"
-              onClick={() => onOpen(workspace.id)}
-              aria-current={workspace.id === activeWorkspaceId}
-              // Explicit, because the computed name would fold the terminal
-              // count into it and collide with "Edit <name>".
-              aria-label={`Open ${workspace.name}`}
+        {workspaces.map((workspace) => {
+          const isActive = workspace.id === activeWorkspaceId
+          const isOpening = workspace.id === openingWorkspaceId
+          return (
+            <li
+              key={workspace.id}
+              className={
+                isActive
+                  ? 'workspace-sidebar__item workspace-sidebar__item--active'
+                  : 'workspace-sidebar__item'
+              }
             >
-              {workspace.name}
-              <span className="workspace-sidebar__count">
-                {workspace.terminalCount} terminal{workspace.terminalCount === 1 ? '' : 's'}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onEdit(workspace.id)}
-              aria-label={`Edit ${workspace.name}`}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(workspace.id)}
-              aria-label={`Delete ${workspace.name}`}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
+              <button
+                type="button"
+                className="workspace-sidebar__open"
+                onClick={() => onOpen(workspace.id)}
+                disabled={openingWorkspaceId !== null}
+                aria-current={isActive}
+                // Explicit, because the computed name would fold the terminal
+                // count into it and collide with "Edit <name>".
+                aria-label={`Open ${workspace.name}`}
+              >
+                <span className="workspace-sidebar__name">
+                  {workspace.name}
+                  {isActive && <span className="workspace-sidebar__active">Active</span>}
+                </span>
+                <span className="workspace-sidebar__count">
+                  {isOpening
+                    ? 'Opening…'
+                    : `${workspace.terminalCount} terminal${workspace.terminalCount === 1 ? '' : 's'}`}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onEdit(workspace.id)}
+                disabled={openingWorkspaceId !== null}
+                aria-label={`Edit ${workspace.name}`}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(workspace.id)}
+                disabled={openingWorkspaceId !== null}
+                aria-label={`Delete ${workspace.name}`}
+              >
+                Delete
+              </button>
+            </li>
+          )
+        })}
       </ul>
     )}
 

@@ -34,43 +34,66 @@ describe('summaries and the active workspace', () => {
 
 describe('bindings', () => {
   it('maps a definition to the session running it', () => {
-    store().bind('term_a', 'sess_1')
+    store().bind('ws_a', 'term_a', 'sess_1')
 
     expect(store().bindings).toEqual({ term_a: 'sess_1' })
+    expect(store().workspaceByDefinitionId).toEqual({ term_a: 'ws_a' })
   })
 
   it('re-binding a definition replaces its session rather than adding one', () => {
-    store().bind('term_a', 'sess_1')
-    store().bind('term_a', 'sess_2')
+    store().bind('ws_a', 'term_a', 'sess_1')
+    store().bind('ws_a', 'term_a', 'sess_2')
 
     expect(store().bindings).toEqual({ term_a: 'sess_2' })
   })
 
   it('drops only the bindings whose session is gone', () => {
-    store().bind('term_a', 'sess_1')
-    store().bind('term_b', 'sess_2')
+    store().bind('ws_a', 'term_a', 'sess_1')
+    store().bind('ws_b', 'term_b', 'sess_2')
 
     store().retainBindings(['sess_2'])
 
     expect(store().bindings).toEqual({ term_b: 'sess_2' })
+    expect(store().workspaceByDefinitionId).toEqual({ term_b: 'ws_b' })
   })
 
   it('drops every binding when no session survives', () => {
-    store().bind('term_a', 'sess_1')
+    store().bind('ws_a', 'term_a', 'sess_1')
 
     store().retainBindings([])
 
     expect(store().bindings).toEqual({})
+    expect(store().workspaceByDefinitionId).toEqual({})
   })
 
   /** It runs on every terminal-store change, so a no-op must stay a no-op. */
   it('leaves the state object untouched when nothing needs dropping', () => {
-    store().bind('term_a', 'sess_1')
+    store().bind('ws_a', 'term_a', 'sess_1')
     const before = store().bindings
 
     store().retainBindings(['sess_1', 'sess_9'])
 
     expect(store().bindings).toBe(before)
+  })
+
+  it('forgets only the deleted workspace ownership and leaves sessions to the terminal store', () => {
+    store().bind('ws_a', 'term_a', 'sess_1')
+    store().bind('ws_b', 'term_b', 'sess_2')
+
+    store().forgetWorkspace('ws_a')
+
+    expect(store().bindings).toEqual({ term_b: 'sess_2' })
+    expect(store().workspaceByDefinitionId).toEqual({ term_b: 'ws_b' })
+  })
+
+  it('drops a binding removed by an explicit workspace save', () => {
+    store().bind('ws_a', 'term_a', 'sess_1')
+    store().bind('ws_a', 'term_b', 'sess_2')
+
+    store().retainWorkspaceDefinitions('ws_a', ['term_b'])
+
+    expect(store().bindings).toEqual({ term_b: 'sess_2' })
+    expect(store().workspaceByDefinitionId).toEqual({ term_b: 'ws_a' })
   })
 })
 
@@ -106,7 +129,7 @@ describe('reset', () => {
   it('clears everything', () => {
     store().setSummaries([summary('ws_a', 'A')])
     store().setActiveWorkspaceId('ws_a')
-    store().bind('term_a', 'sess_1')
+    store().bind('ws_a', 'term_a', 'sess_1')
     store().setOpenNotices([
       { definitionId: 'term_a', title: 'A', severity: 'error', message: 'no' }
     ])
@@ -116,6 +139,7 @@ describe('reset', () => {
     expect(store().summaries).toEqual([])
     expect(store().activeWorkspaceId).toBeNull()
     expect(store().bindings).toEqual({})
+    expect(store().workspaceByDefinitionId).toEqual({})
     expect(store().openNotices).toEqual([])
   })
 })
@@ -125,10 +149,16 @@ describe('serializability', () => {
   it('the whole state survives a JSON round trip', () => {
     store().setSummaries([summary('ws_a', 'A')])
     store().setActiveWorkspaceId('ws_a')
-    store().bind('term_a', 'sess_1')
+    store().bind('ws_a', 'term_a', 'sess_1')
 
-    const { summaries, activeWorkspaceId, bindings, openNotices } = store()
-    const state = { summaries, activeWorkspaceId, bindings, openNotices }
+    const { summaries, activeWorkspaceId, bindings, workspaceByDefinitionId, openNotices } = store()
+    const state = {
+      summaries,
+      activeWorkspaceId,
+      bindings,
+      workspaceByDefinitionId,
+      openNotices
+    }
 
     expect(JSON.parse(JSON.stringify(state))).toEqual(state)
   })

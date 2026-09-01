@@ -10,6 +10,7 @@ import {
 } from '../../../testing/fakeGitDeckApi'
 import { useTerminalStore } from '../../terminal/public'
 import { useWorkspaceStore } from '../store/workspaceStore'
+import { useOpenWorkspace } from './useOpenWorkspace'
 import { useRestoreOnStartup } from './useRestoreOnStartup'
 
 const WS_ID = 'ws_aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
@@ -46,7 +47,10 @@ const givenLastRun = async (patch: AppSettingsPatch): Promise<void> => {
 }
 
 const startUp = async () => {
-  const view = renderHook(() => useRestoreOnStartup())
+  const view = renderHook(() => {
+    const opener = useOpenWorkspace()
+    return useRestoreOnStartup(opener.open)
+  })
   await waitFor(() => expect(view.result.current.status).toBe('settled'))
   return view
 }

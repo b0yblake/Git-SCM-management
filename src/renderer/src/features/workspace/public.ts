@@ -1,5 +1,5 @@
 // Public surface of the renderer workspace feature (ARCHITECTURE.md §4).
-export { WorkspacePanel } from './components/WorkspacePanel'
+export { WorkspacePanel, type WorkspacePanelProps } from './components/WorkspacePanel'
 export { WorkspaceSidebar, type WorkspaceSidebarProps } from './components/WorkspaceSidebar'
 export { WorkspaceEditor, type WorkspaceEditorProps } from './components/WorkspaceEditor'
 export {

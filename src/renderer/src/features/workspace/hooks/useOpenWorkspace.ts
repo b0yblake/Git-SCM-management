@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { IpcError } from '@shared/contracts/ipc'
+import type { TerminalDefinition, TerminalSessionInfo } from '@shared/contracts/terminal'
 import { useToastStore } from '../../../shared/store/toastStore'
 import { useTerminalStore } from '../../terminal/public'
 import { useWorkspaceStore, type OpenNotice } from '../store/workspaceStore'
@@ -8,9 +9,8 @@ export interface OpenWorkspaceOptions {
   /**
    * Whether the workspace's startup commands are run.
    *
-   * Opening a workspace by hand is consent to run them — that is the feature.
-   * Being restored into one at launch is not, which is why Phase 8 gates the
-   * restore path behind a setting that defaults to off.
+   * Opening a workspace by hand is consent to run them. Being restored into
+   * one at launch is not, so the restore path gates this behind a setting.
    */
   readonly runStartupCommands?: boolean
   /** Which definition to focus. Defaults to the workspace's own choice. */
@@ -18,129 +18,205 @@ export interface OpenWorkspaceOptions {
 }
 
 export interface OpenWorkspaceController {
-  readonly open: (workspaceId: string, options?: OpenWorkspaceOptions) => Promise<void>
+  /** True when the workspace loaded, even when an individual terminal failed. */
+  readonly open: (workspaceId: string, options?: OpenWorkspaceOptions) => Promise<boolean>
   readonly isOpening: boolean
+  readonly openingWorkspaceId: string | null
   readonly notices: readonly OpenNotice[]
   readonly lastError: IpcError | null
 }
 
+const canReuse = (
+  session: TerminalSessionInfo | undefined,
+  definition: TerminalDefinition
+): session is TerminalSessionInfo =>
+  session !== undefined &&
+  (session.status === 'running' || session.status === 'starting') &&
+  session.definition.cwd === definition.cwd &&
+  session.definition.shellProfileId === definition.shellProfileId &&
+  session.definition.startupCommand === definition.startupCommand
+
 /**
- * Turns N stored terminal definitions into N live sessions.
+ * Turns stored terminal definitions into live sessions.
  *
- * This is the one place where the workspace feature touches the terminal
- * feature, and it does so through its public surface only.
+ * Re-opening is idempotent: a definition reuses its still-running bound
+ * session and only a missing, exited, or materially changed definition creates
+ * a new PTY. Existing unrelated sessions are never killed.
  */
 export const useOpenWorkspace = (): OpenWorkspaceController => {
   const notices = useWorkspaceStore((state) => state.openNotices)
   const [lastError, setLastError] = useState<IpcError | null>(null)
-  const [isOpening, setIsOpening] = useState(false)
-  const lastPersistedFocus = useRef<string | null>(null)
+  const [openingWorkspaceId, setOpeningWorkspaceId] = useState<string | null>(null)
+  const openingRef = useRef<string | null>(null)
+  const lastPersistedSelection = useRef<string | null>(null)
 
-  // Only the terminal store knows when a session goes away, and two things
-  // depend on that: a closed tab must not leave its binding behind, and the
-  // tab the user is looking at is what restore puts them back on.
+  // Only the terminal store knows when a session goes away. Keep runtime
+  // bindings pruned and remember both halves of the user's last workspace
+  // selection whenever they focus one of its terminals.
   useEffect(
     () =>
       useTerminalStore.subscribe((state) => {
         const store = useWorkspaceStore.getState()
         store.retainBindings(state.order)
 
-        const focused =
-          Object.entries(useWorkspaceStore.getState().bindings).find(
-            ([, sessionId]) => sessionId === state.activeSessionId
-          )?.[0] ?? null
+        const current = useWorkspaceStore.getState()
+        const focusedDefinitionId = Object.entries(current.bindings).find(
+          ([, sessionId]) => sessionId === state.activeSessionId
+        )?.[0]
+        if (!focusedDefinitionId) return
 
-        if (focused === null || focused === lastPersistedFocus.current) return
-        lastPersistedFocus.current = focused
-        void window.gitdeck.settings.update({ activeTerminalDefinitionId: focused })
+        const workspaceId = current.workspaceByDefinitionId[focusedDefinitionId]
+        if (!workspaceId) return
+
+        const selection = `${workspaceId}:${focusedDefinitionId}`
+        if (selection === lastPersistedSelection.current) return
+        lastPersistedSelection.current = selection
+
+        current.setActiveWorkspaceId(workspaceId)
+        void window.gitdeck.settings
+          .update({
+            activeWorkspaceId: workspaceId,
+            activeTerminalDefinitionId: focusedDefinitionId
+          })
+          .then((remembered) => {
+            if (!remembered.ok) useToastStore.getState().push('error', remembered.error.message)
+          })
       }),
     []
   )
 
-  const open = useCallback(async (workspaceId: string, options: OpenWorkspaceOptions = {}) => {
-    // Documented rule: re-opening the workspace that is already open does
-    // nothing. Spawning a second copy of every terminal is never what the user
-    // meant by clicking it again.
-    if (useWorkspaceStore.getState().activeWorkspaceId === workspaceId) return
+  const open = useCallback(
+    async (workspaceId: string, options: OpenWorkspaceOptions = {}): Promise<boolean> => {
+      // The buttons are disabled while opening, but this guard also protects
+      // keyboard activation and callers outside the sidebar from double-spawn.
+      if (openingRef.current !== null) return false
+      openingRef.current = workspaceId
+      setOpeningWorkspaceId(workspaceId)
 
-    const runStartupCommands = options.runStartupCommands ?? true
+      try {
+        const loaded = await window.gitdeck.workspace.get(workspaceId)
+        if (!loaded.ok) {
+          setLastError(loaded.error)
+          useToastStore.getState().push('error', loaded.error.message)
+          return false
+        }
 
-    setIsOpening(true)
-    try {
-      const loaded = await window.gitdeck.workspace.get(workspaceId)
-      if (!loaded.ok) {
-        setLastError(loaded.error)
-        useToastStore.getState().push('error', loaded.error.message)
-        return
-      }
-      const workspace = loaded.value
-      setLastError(null)
+        const workspace = loaded.value
+        const runStartupCommands = options.runStartupCommands ?? true
+        const opened: Array<readonly [string, string]> = []
+        const found: OpenNotice[] = []
 
-      const opened: Array<readonly [string, string]> = []
-      const found: OpenNotice[] = []
+        // Sequential creation preserves definition order in the terminal deck.
+        for (const definition of workspace.terminals) {
+          const workspaceState = useWorkspaceStore.getState()
+          const boundSessionId = workspaceState.bindings[definition.id]
+          const belongsToWorkspace =
+            workspaceState.workspaceByDefinitionId[definition.id] === workspaceId
+          const boundSession = boundSessionId
+            ? useTerminalStore.getState().sessions[boundSessionId]
+            : undefined
 
-      // Sequential, so the tabs land in definition order.
-      for (const definition of workspace.terminals) {
-        const created = await window.gitdeck.terminal.create({
-          cwd: definition.cwd,
-          shellProfileId: definition.shellProfileId,
-          title: definition.title,
-          ...(definition.startupCommand === undefined
-            ? {}
-            : { startupCommand: definition.startupCommand })
+          if (belongsToWorkspace && boundSessionId && canReuse(boundSession, definition)) {
+            opened.push([definition.id, boundSessionId])
+            continue
+          }
+
+          if (
+            belongsToWorkspace &&
+            boundSessionId &&
+            boundSession &&
+            (boundSession.status === 'exited' || boundSession.status === 'failed')
+          ) {
+            useTerminalStore.getState().removeSession(boundSessionId)
+          }
+
+          const created = await window.gitdeck.terminal.create({
+            cwd: definition.cwd,
+            shellProfileId: definition.shellProfileId,
+            title: definition.title,
+            ...(definition.startupCommand === undefined
+              ? {}
+              : { startupCommand: definition.startupCommand })
+          })
+
+          if (!created.ok) {
+            found.push({
+              definitionId: definition.id,
+              title: definition.title,
+              severity: 'error',
+              message: created.error.message
+            })
+            continue
+          }
+
+          useTerminalStore.getState().addSession(created.value)
+          useWorkspaceStore.getState().bind(workspaceId, definition.id, created.value.id)
+          opened.push([definition.id, created.value.id])
+
+          // Main falls back when a saved directory is gone; the returned cwd
+          // is the reliable signal because the renderer cannot inspect paths.
+          if (created.value.definition.cwd !== definition.cwd) {
+            found.push({
+              definitionId: definition.id,
+              title: definition.title,
+              severity: 'warning',
+              message: `${definition.cwd} no longer exists — opened in ${created.value.definition.cwd}`
+            })
+          }
+
+          // Reused sessions have already run their startup command. Only a
+          // newly-created session may receive it here.
+          if (runStartupCommands && definition.startupCommand) {
+            window.gitdeck.terminal.write(created.value.id, `${definition.startupCommand}\r`)
+          }
+        }
+
+        const store = useWorkspaceStore.getState()
+        store.setOpenNotices(found)
+        store.setActiveWorkspaceId(workspaceId)
+        setLastError(null)
+
+        const focused =
+          opened.find(([definitionId]) => definitionId === options.focusDefinitionId) ??
+          opened.find(([definitionId]) => definitionId === workspace.activeTerminalId) ??
+          opened[0]
+        const focusedDefinitionId = focused?.[0] ?? null
+        const focusedSessionId = focused?.[1]
+
+        if (focusedSessionId && focusedDefinitionId) {
+          lastPersistedSelection.current = `${workspaceId}:${focusedDefinitionId}`
+          useTerminalStore.getState().setActive(focusedSessionId)
+        }
+
+        const remembered = await window.gitdeck.settings.update({
+          activeWorkspaceId: workspaceId,
+          activeTerminalDefinitionId: focusedDefinitionId
         })
+        if (!remembered.ok) useToastStore.getState().push('error', remembered.error.message)
 
-        if (!created.ok) {
-          // One missing shell must not cost the user the rest of the workspace.
-          found.push({
-            definitionId: definition.id,
-            title: definition.title,
-            severity: 'error',
-            message: created.error.message
-          })
-          continue
+        for (const notice of found) {
+          useToastStore
+            .getState()
+            .push(notice.severity === 'error' ? 'error' : 'info', `${notice.title}: ${notice.message}`)
         }
 
-        useTerminalStore.getState().addSession(created.value)
-        opened.push([definition.id, created.value.id])
-
-        // Main falls back when the saved directory is gone; the only way to
-        // know it happened is that what came back is not what was asked for.
-        if (created.value.definition.cwd !== definition.cwd) {
-          found.push({
-            definitionId: definition.id,
-            title: definition.title,
-            severity: 'warning',
-            message: `${definition.cwd} no longer exists — opened in ${created.value.definition.cwd}`
-          })
-        }
-
-        if (runStartupCommands && definition.startupCommand) {
-          window.gitdeck.terminal.write(created.value.id, `${definition.startupCommand}\r`)
-        }
+        return true
+      } finally {
+        openingRef.current = null
+        setOpeningWorkspaceId(null)
       }
-
-      const store = useWorkspaceStore.getState()
-      for (const [definitionId, sessionId] of opened) store.bind(definitionId, sessionId)
-      store.setOpenNotices(found)
-      store.setActiveWorkspaceId(workspaceId)
-
-      // Where the user was, else the workspace's own choice, else the first
-      // definition — never whichever happened to be created last.
-      const focus =
-        opened.find(([definitionId]) => definitionId === options.focusDefinitionId)?.[1] ??
-        opened.find(([definitionId]) => definitionId === workspace.activeTerminalId)?.[1] ??
-        opened[0]?.[1]
-      if (focus) useTerminalStore.getState().setActive(focus)
-
-      void window.gitdeck.settings.update({ activeWorkspaceId: workspaceId })
-    } finally {
-      setIsOpening(false)
-    }
-  }, [])
+    },
+    []
+  )
 
   return useMemo(
-    () => ({ open, isOpening, notices, lastError }),
-    [open, isOpening, notices, lastError]
+    () => ({
+      open,
+      isOpening: openingWorkspaceId !== null,
+      openingWorkspaceId,
+      notices,
+      lastError
+    }),
+    [open, openingWorkspaceId, notices, lastError]
   )
 }

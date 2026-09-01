@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { TerminalDefinition } from '@shared/contracts/terminal'
 import type { Workspace } from '@shared/contracts/workspace'
@@ -142,7 +142,10 @@ describe('opening a workspace', () => {
 
     await act(() => result.current.open('ws_saas'))
 
-    expect(api.calls.settingsUpdate).toContainEqual({ activeWorkspaceId: 'ws_saas' })
+    expect(api.calls.settingsUpdate).toContainEqual({
+      activeWorkspaceId: 'ws_saas',
+      activeTerminalDefinitionId: 'term_backend'
+    })
     expect(api.storedSettings().activeWorkspaceId).toBe('ws_saas')
   })
 
@@ -243,8 +246,8 @@ describe('the definitionId to sessionId binding', () => {
   })
 })
 
-describe('opening the same workspace twice', () => {
-  it('does nothing the second time, rather than duplicating every terminal', async () => {
+describe('re-opening a workspace', () => {
+  it('reuses every running bound session rather than duplicating terminals', async () => {
     api.seedWorkspaces(workspace())
     const { result } = mount()
 
@@ -253,6 +256,64 @@ describe('opening the same workspace twice', () => {
 
     expect(api.calls.create).toHaveLength(2)
     expect(useTerminalStore.getState().order).toHaveLength(2)
+  })
+
+  it('creates only the definition whose previous session was closed', async () => {
+    api.seedWorkspaces(workspace())
+    const { result } = mount()
+    await act(() => result.current.open('ws_saas'))
+    const closed = useWorkspaceStore.getState().bindings['term_backend']!
+    act(() => useTerminalStore.getState().removeSession(closed))
+
+    await act(() => result.current.open('ws_saas'))
+
+    expect(api.calls.create).toHaveLength(3)
+    expect(useTerminalStore.getState().order).toHaveLength(2)
+    expect(useWorkspaceStore.getState().bindings['term_backend']).not.toBe(closed)
+  })
+
+  it('replaces an exited bound session without leaving the dead pane behind', async () => {
+    api.seedWorkspaces(workspace())
+    const { result } = mount()
+    await act(() => result.current.open('ws_saas'))
+    const exited = useWorkspaceStore.getState().bindings['term_backend']!
+    act(() => useTerminalStore.getState().markExited(exited, 1))
+
+    await act(() => result.current.open('ws_saas'))
+
+    expect(useTerminalStore.getState().sessions[exited]).toBeUndefined()
+    expect(useTerminalStore.getState().order).toHaveLength(2)
+  })
+
+  it('does not rerun startup commands on a reused session', async () => {
+    api.seedWorkspaces(
+      workspace({ terminals: [definition('term_backend', { startupCommand: 'npm run dev' })] })
+    )
+    const { result } = mount()
+
+    await act(() => result.current.open('ws_saas'))
+    await act(() => result.current.open('ws_saas'))
+
+    expect(api.calls.write).toHaveLength(1)
+  })
+})
+
+describe('remembering the last working workspace', () => {
+  it('switches the remembered workspace when an older workspace session is focused', async () => {
+    api.seedWorkspaces(
+      workspace({ id: 'ws_a', terminals: [definition('term_a')] }),
+      workspace({ id: 'ws_b', terminals: [definition('term_b')] })
+    )
+    const { result } = mount()
+    await act(() => result.current.open('ws_a'))
+    const sessionA = useWorkspaceStore.getState().bindings['term_a']!
+    await act(() => result.current.open('ws_b'))
+
+    act(() => useTerminalStore.getState().setActive(sessionA))
+
+    await waitFor(() => expect(api.storedSettings().activeWorkspaceId).toBe('ws_a'))
+    expect(api.storedSettings().activeTerminalDefinitionId).toBe('term_a')
+    expect(useWorkspaceStore.getState().activeWorkspaceId).toBe('ws_a')
   })
 })
 
