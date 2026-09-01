@@ -140,8 +140,10 @@ export const TerminalDeck = (): React.JSX.Element => {
 
       {controller.pendingClose && (
         <ConfirmDialog
-          title={`Close "${controller.pendingClose.title}"? Its process is still running.`}
+          title={`Close "${controller.pendingClose.title}"?`}
+          description="Its shell process is still running and closing will end it. To keep it running in the background, park the terminal instead."
           confirmLabel="Close terminal"
+          danger
           onConfirm={() => void controller.confirmPendingClose()}
           onCancel={controller.cancelPendingClose}
         />

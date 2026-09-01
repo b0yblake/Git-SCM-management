@@ -1,10 +1,17 @@
 /* Ports modal (Phase 12). Builds on the shared .dialog primitives. */
 
-.ports-modal {
+/*
+ * Chained with .dialog on purpose: this file is @import'ed before global.css's
+ * own rules, so at equal specificity the shared .dialog primitive's
+ * `max-width: 28rem` wins the cascade — and silently capped this modal at
+ * 28rem no matter what plain `.ports-modal` declared. The compound selector
+ * out-ranks it.
+ */
+.dialog.ports-modal {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  width: min(44rem, calc(100vw - 4rem));
+  width: min(88rem, calc(100vw - 4rem));
   max-width: none;
   max-height: calc(100vh - 6rem);
 }

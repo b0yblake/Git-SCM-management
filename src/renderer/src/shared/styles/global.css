@@ -361,6 +361,135 @@ button {
   background: var(--surface-control-hover);
 }
 
+/*
+ * Confirm dialog (shared ConfirmDialog component). Scoped under
+ * .dialog--confirm so the ports modal, which reuses the .dialog primitives,
+ * keeps its own look.
+ */
+.dialog--confirm {
+  min-width: 22rem;
+  max-width: 26rem;
+  padding: var(--space-5);
+  animation: dialog-confirm-enter 140ms ease-out;
+}
+
+@keyframes dialog-confirm-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog--confirm {
+    animation: none;
+  }
+}
+
+.dialog--confirm .dialog__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.dialog__description {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  line-height: 1.5;
+}
+
+.dialog--confirm .dialog__actions {
+  margin-top: var(--space-4);
+}
+
+/* The focused default action must look armed: Enter fires it. */
+.dialog--confirm .dialog__actions button:focus {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
+.dialog__actions .dialog__button--danger {
+  border-color: var(--danger);
+  background: var(--danger-surface);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.dialog__actions .dialog__button--danger:hover {
+  background: color-mix(in srgb, var(--danger) 18%, var(--danger-surface));
+}
+
+.dialog--confirm .dialog__actions .dialog__button--danger:focus {
+  outline-color: var(--danger);
+}
+
+/* Update notification (Phase 16). A status strip, never a modal. */
+.update-banner {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 34rem;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.update-banner__message {
+  font-size: var(--font-small);
+}
+
+.update-banner__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.update-banner__actions button {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-control);
+  color: var(--text);
+  font-size: var(--font-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.update-banner__actions button:hover {
+  background: var(--surface-control-hover);
+}
+
+.update-banner__actions .update-banner__primary {
+  border-color: var(--accent);
+  background: var(--accent-surface);
+  color: var(--accent-strong);
+}
+
+.update-check {
+  margin-top: var(--space-3);
+}
+
+.update-check__result {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-small);
+}
+
+.update-check__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-strong);
+  font-size: inherit;
+  cursor: pointer;
+}
+
 .context-menu-backdrop {
   position: fixed;
   inset: 0;
