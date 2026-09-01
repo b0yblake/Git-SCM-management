@@ -8,6 +8,7 @@ import type {
   TerminatePortProcessesRequest,
   TerminatePortProcessesResult
 } from '@shared/contracts/ports'
+import type { UpdateCheckResult } from '@shared/contracts/updates'
 import type { Workspace, WorkspaceInput, WorkspaceSummary } from '@shared/contracts/workspace'
 import type {
   AvailableShellProfile,
@@ -30,6 +31,7 @@ export interface GitDeckApi {
   readonly git: GitApi
   readonly settings: SettingsApi
   readonly ports: PortsApi
+  readonly updates: UpdatesApi
 }
 
 /**
@@ -98,4 +100,16 @@ export interface PortsApi {
     request: TerminatePortProcessesRequest
   ): Promise<Result<TerminatePortProcessesResult, IpcError>>
   onOpen(callback: () => void): Unsubscribe
+}
+
+/**
+ * Startup update notification and manual check (Phase 16). `openRelease`
+ * takes no URL: Main opens only the release page it minted from the validated
+ * tag, so the renderer can never steer the browser anywhere else. Nothing
+ * here downloads or installs anything.
+ */
+export interface UpdatesApi {
+  check(): Promise<Result<UpdateCheckResult, IpcError>>
+  openRelease(): Promise<Result<null, IpcError>>
+  onAvailable(callback: (result: UpdateCheckResult) => void): Unsubscribe
 }

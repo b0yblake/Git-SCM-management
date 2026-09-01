@@ -54,11 +54,20 @@ const parsePatch = (payload: unknown): AppSettingsPatch => {
     patch = { ...patch, terminalFontSize: value }
   }
 
+  if ('skippedUpdateVersion' in record) {
+    const value = record['skippedUpdateVersion']
+    if (value !== null && (typeof value !== 'string' || value.length === 0)) {
+      throw new Error('skippedUpdateVersion must be a non-empty string or null')
+    }
+    patch = { ...patch, skippedUpdateVersion: value }
+  }
+
   for (const field of [
     'restoreLastWorkspace',
     'runStartupCommandsOnRestore',
     'terminalCursorBlink',
-    'confirmBeforeClosingRunningTerminal'
+    'confirmBeforeClosingRunningTerminal',
+    'checkForUpdatesOnStartup'
   ] as const) {
     if (!(field in record)) continue
     const value = record[field]

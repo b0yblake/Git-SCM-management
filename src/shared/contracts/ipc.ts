@@ -36,6 +36,15 @@ export const IPC = {
     terminate: 'ports:terminate',
     /** One-way Main → renderer: the native File → Port… menu entry. */
     open: 'ports:open'
+  },
+
+  updates: {
+    /** Manual check from Settings; bypasses the startup throttle. */
+    check: 'updates:check',
+    /** Opens the release page Main minted — the payload carries no URL. */
+    release: 'updates:release',
+    /** One-way Main → renderer: the startup check found a newer version. */
+    available: 'updates:available'
   }
 } as const
 

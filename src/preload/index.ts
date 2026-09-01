@@ -4,6 +4,7 @@ import { gitApi } from './gitApi'
 import { portsApi } from './portsApi'
 import { settingsApi } from './settingsApi'
 import { terminalApi } from './terminalApi'
+import { updatesApi } from './updatesApi'
 import { workspaceApi } from './workspaceApi'
 
 const api: GitDeckApi = {
@@ -11,7 +12,8 @@ const api: GitDeckApi = {
   workspace: workspaceApi,
   git: gitApi,
   settings: settingsApi,
-  ports: portsApi
+  ports: portsApi,
+  updates: updatesApi
 }
 
 // contextIsolation is on, so this is the only channel between the two worlds.

@@ -108,6 +108,18 @@ export const SettingsScreen = ({
         runStartupCommandsOnRestore={settings.runStartupCommandsOnRestore}
         onChange={onChange}
       />
+
+      <h2>Updates</h2>
+
+      <label htmlFor={`${id}-update-check`}>
+        <input
+          id={`${id}-update-check`}
+          type="checkbox"
+          checked={settings.checkForUpdatesOnStartup}
+          onChange={(event) => onChange({ checkForUpdatesOnStartup: event.target.checked })}
+        />
+        Check for new versions at startup
+      </label>
     </section>
   )
 }

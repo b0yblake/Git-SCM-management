@@ -61,6 +61,11 @@ describe('channel registry', () => {
     expect(Object.keys(IPC.ports).sort()).toEqual(['list', 'open', 'terminate'])
   })
 
+  it('the updates namespace holds exactly check, release and available', () => {
+    // `release` carries no payload: Main opens only the URL it minted itself.
+    expect(Object.keys(IPC.updates).sort()).toEqual(['available', 'check', 'release'])
+  })
+
   it('every terminal channel is prefixed with its namespace', () => {
     for (const channel of Object.values(IPC.terminal)) {
       expect(channel.startsWith('terminal:')).toBe(true)
@@ -72,7 +77,7 @@ describe('channel registry', () => {
    * directly into a handler or a preload call would silently bypass it.
    */
   it('no raw channel literal exists outside the registry', () => {
-    const literal = /['"`](terminal|settings|workspace|git|ports):[a-z]+['"`]/
+    const literal = /['"`](terminal|settings|workspace|git|ports|updates):[a-z]+['"`]/
 
     const offenders = sourceFiles(SRC)
       .filter((path) => path !== REGISTRY && path !== THIS_FILE && path !== SNAPSHOT)

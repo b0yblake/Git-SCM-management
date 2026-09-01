@@ -34,23 +34,31 @@ describe('the IPC surface', () => {
       git: {
         inspect: 'git:inspect'
       },
-      // Phase 12 — the one deliberate addition since this snapshot was written.
-      // `ports:terminate` is the only destructive channel in the application.
+      // Phase 12 — deliberate addition. `ports:terminate` is the only
+      // destructive channel in the application.
       ports: {
         list: 'ports:list',
         terminate: 'ports:terminate',
         open: 'ports:open'
+      },
+      // Phase 16 — deliberate addition. Read-only check plus opening the
+      // release page Main minted; no channel accepts a URL or downloads
+      // anything.
+      updates: {
+        check: 'updates:check',
+        release: 'updates:release',
+        available: 'updates:available'
       }
     })
   })
 
-  it('holds five namespaces and seventeen channels', () => {
+  it('holds six namespaces and twenty channels', () => {
     // A count is a second, blunter guard: renaming a channel keeps the count,
     // but adding one cannot.
     const namespaces = Object.keys(IPC)
     const channels = Object.values(IPC).flatMap((namespace) => Object.values(namespace))
 
-    expect(namespaces).toEqual(['terminal', 'settings', 'workspace', 'git', 'ports'])
-    expect(channels).toHaveLength(17)
+    expect(namespaces).toEqual(['terminal', 'settings', 'workspace', 'git', 'ports', 'updates'])
+    expect(channels).toHaveLength(20)
   })
 })

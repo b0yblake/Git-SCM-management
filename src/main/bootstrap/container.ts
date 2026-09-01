@@ -13,10 +13,11 @@ import {
   pickDefaultShellProfileId,
   type TerminalService
 } from '../features/terminal/public'
+import { createUpdateService, type UpdateService } from '../features/updates/public'
 import { createWorkspaceService, type WorkspaceService } from '../features/workspace/public'
 import { combineSinks, createFileSink } from './fileSink'
 import { consoleSink, createLogger, type Logger } from './logger'
-import { recordRun } from './storageManifest'
+import { patchManifest, readManifestTimestamp, recordRun } from './storageManifest'
 import { createStoragePaths } from './storagePaths'
 
 /**
@@ -36,6 +37,8 @@ export interface AppContainer {
   readonly git: GitService
   /** Port inspection and deliberate process termination (Phase 12). */
   readonly ports: PortService
+  /** Startup release check — notify and link only, never download (Phase 16). */
+  readonly updates: UpdateService
 }
 
 /**
@@ -89,6 +92,15 @@ export const createContainer = (): AppContainer => {
     git: createGitService(logger),
     // `process.pid` crosses here so the service can refuse to let the user
     // kill the application they are clicking in.
-    ports: createPortService(logger, process.pid)
+    ports: createPortService(logger, process.pid),
+    updates: createUpdateService(logger, {
+      currentVersion: app.getVersion(),
+      getSettings: () => {
+        const { checkForUpdatesOnStartup, skippedUpdateVersion } = settings.get()
+        return { checkForUpdatesOnStartup, skippedUpdateVersion }
+      },
+      readLastCheckAt: () => readManifestTimestamp(paths.manifestFile, 'lastUpdateCheckAt'),
+      recordCheckAt: (at) => patchManifest(paths.manifestFile, { lastUpdateCheckAt: at }, logger)
+    })
   }
 }

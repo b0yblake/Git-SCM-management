@@ -11,6 +11,7 @@ import type {
   TerminatePortProcessesRequest,
   TerminatePortProcessesResult
 } from '@shared/contracts/ports'
+import type { UpdateCheckResult } from '@shared/contracts/updates'
 import type { Workspace, WorkspaceInput, WorkspaceSummary } from '@shared/contracts/workspace'
 
 type TerminalApi = Window['gitdeck']['terminal']
@@ -18,6 +19,7 @@ type SettingsApi = Window['gitdeck']['settings']
 type WorkspaceApi = Window['gitdeck']['workspace']
 type GitApi = Window['gitdeck']['git']
 type PortsApi = Window['gitdeck']['ports']
+type UpdatesApi = Window['gitdeck']['updates']
 
 /** What the fake detector "found". Deliberately not all five. */
 export const FAKE_PROFILES: AvailableShellProfile[] = [
@@ -39,6 +41,7 @@ export interface FakeGitDeckApi {
   readonly workspace: WorkspaceApi
   readonly git: GitApi
   readonly ports: PortsApi
+  readonly updates: UpdatesApi
   readonly calls: {
     create: unknown[]
     profiles: number
@@ -53,6 +56,8 @@ export interface FakeGitDeckApi {
     gitInspect: string[]
     portsList: number
     portsTerminate: TerminatePortProcessesRequest[]
+    updatesCheck: number
+    updatesOpenRelease: number
   }
   /** What the fake has persisted — survives an `install()`/`uninstall()` cycle. */
   storedSettings(): AppSettings
@@ -74,6 +79,10 @@ export interface FakeGitDeckApi {
   failPortsTerminate(code: string, message: string): void
   /** Fires the native menu's File → Port… signal. */
   emitPortsOpen(): void
+  /** What the next `updates.check` answers. Defaults to up-to-date. */
+  setUpdateCheckResult(result: UpdateCheckResult): void
+  /** Fires the startup update-available push. */
+  emitUpdateAvailable(result: UpdateCheckResult): void
   /**
    * Simulates Main falling back when a saved directory is gone: a create for
    * this path succeeds, but comes back seated in `FAKE_FALLBACK_CWD`.
@@ -111,7 +120,9 @@ export const emptyCalls = (): FakeGitDeckApi['calls'] => ({
   workspaceDelete: [],
   gitInspect: [],
   portsList: 0,
-  portsTerminate: []
+  portsTerminate: [],
+  updatesCheck: 0,
+  updatesOpenRelease: 0
 })
 
 export const createFakeGitDeckApi = (): FakeGitDeckApi => {
@@ -134,6 +145,12 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
   let portsTerminateOverride: TerminatePortProcessesResult | null = null
   let portsTerminateError: IpcError | null = null
   let snapshots = 0
+  const updateAvailableListeners = new Set<(result: UpdateCheckResult) => void>()
+  let updateCheckResult: UpdateCheckResult = {
+    status: 'up-to-date',
+    currentVersion: '0.1.0',
+    latest: null
+  }
 
   const terminal: TerminalApi = {
     create: (request) => {
@@ -320,12 +337,30 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     }
   }
 
+  const updatesApi: UpdatesApi = {
+    check: () => {
+      calls.updatesCheck += 1
+      return Promise.resolve({ ok: true as const, value: updateCheckResult })
+    },
+    openRelease: () => {
+      calls.updatesOpenRelease += 1
+      return Promise.resolve({ ok: true as const, value: null })
+    },
+    onAvailable: (callback) => {
+      updateAvailableListeners.add(callback)
+      return () => {
+        updateAvailableListeners.delete(callback)
+      }
+    }
+  }
+
   return {
     terminal,
     settings: settingsApi,
     workspace: workspaceApi,
     git: gitApi,
     ports: portsApi,
+    updates: updatesApi,
     calls,
     storedSettings: () => settings,
     storedWorkspaces: () => [...workspaces.values()],
@@ -356,10 +391,20 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     emitPortsOpen: () => {
       for (const listener of [...portsOpenListeners]) listener()
     },
+    setUpdateCheckResult: (result) => {
+      updateCheckResult = result
+    },
+    emitUpdateAvailable: (result) => {
+      for (const listener of [...updateAvailableListeners]) listener(result)
+    },
     markDirectoryMissing: (path) => {
       missingDirectories.add(path)
     },
-    listenerCount: () => dataListeners.size + exitListeners.size + portsOpenListeners.size,
+    listenerCount: () =>
+      dataListeners.size +
+      exitListeners.size +
+      portsOpenListeners.size +
+      updateAvailableListeners.size,
     emitData: (event) => {
       for (const listener of [...dataListeners]) listener(event)
     },
@@ -373,7 +418,8 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
           workspace: workspaceApi,
           git: gitApi,
           settings: settingsApi,
-          ports: portsApi
+          ports: portsApi,
+          updates: updatesApi
         },
         configurable: true,
         writable: true
@@ -383,6 +429,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       dataListeners.clear()
       exitListeners.clear()
       portsOpenListeners.clear()
+      updateAvailableListeners.clear()
       Reflect.deleteProperty(window, 'gitdeck')
     }
   }

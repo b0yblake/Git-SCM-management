@@ -3,6 +3,7 @@ import { GitStatusBar } from '../features/git/public'
 import { PortsModalHost } from '../features/ports/public'
 import { SettingsPanel } from '../features/settings/public'
 import { TerminalDeck } from '../features/terminal/public'
+import { UpdateBanner } from '../features/updates/public'
 import { WorkspacePanel } from '../features/workspace/public'
 import { ToastHost } from '../shared/components/Toast'
 import { ActivityRail, type AppSection } from './ActivityRail'
@@ -36,6 +37,7 @@ export const App = (): React.JSX.Element => {
       <GitStatusBar />
       <ToastHost />
       <PortsModalHost />
+      <UpdateBanner />
     </div>
   )
 }

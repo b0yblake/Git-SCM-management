@@ -91,6 +91,24 @@ interface AppCommand {
 
 ---
 
+## Silent Auto-Update
+
+> **Half promoted 2026-09-01:** Phase 16 —
+> [Update Check](phase-16-update-check.md) — ships the notify-and-link half:
+> check GitHub Releases at startup, show a dismissible banner, open the
+> release page in the browser.
+
+The other half — downloading and installing without the browser — stays here,
+**blocked on code signing**: an unsigned binary that replaces itself is
+indistinguishable from malware to SmartScreen and to a reasonable user, and
+every silent update would re-trigger the SmartScreen warning anyway.
+
+Unblocks when a signing certificate exists. Then scope `electron-updater`
+against the `latest.yml` + blockmap artifacts electron-builder already
+produces.
+
+---
+
 ## Not scoped at all
 
 ```text

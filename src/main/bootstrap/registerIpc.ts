@@ -1,7 +1,9 @@
+import { shell } from 'electron'
 import { registerSettingsIpc } from '../features/settings/public'
 import { registerGitIpc } from '../features/git/public'
 import { registerPortsIpc } from '../features/ports/public'
 import { registerTerminalIpc } from '../features/terminal/public'
+import { registerUpdatesIpc } from '../features/updates/public'
 import { registerWorkspaceIpc } from '../features/workspace/public'
 import type { AppContainer } from './container'
 import { electronBroadcaster, electronIpcRegistry } from './ipcPorts'
@@ -44,7 +46,16 @@ export const registerIpc = (container: AppContainer): void => {
     logger: container.logger
   })
 
+  registerUpdatesIpc({
+    registry: electronIpcRegistry,
+    updates: container.updates,
+    // The only external-open in the app, and it only ever receives the URL
+    // Main minted for the last check result.
+    openExternal: (url) => shell.openExternal(url),
+    logger: container.logger
+  })
+
   container.logger.debug(
-    'registerIpc: terminal, settings, workspace, git and ports channels registered'
+    'registerIpc: terminal, settings, workspace, git, ports and updates channels registered'
   )
 }
