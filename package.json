@@ -1,7 +1,11 @@
 {
   "name": "gitdeck",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A project-aware Windows terminal workspace manager for developers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/b0yblake/Git-SCM-management.git"
+  },
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {

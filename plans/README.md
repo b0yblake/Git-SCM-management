@@ -28,6 +28,9 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 | — | [checkpoint-b-pre-release.md](checkpoint-b-pre-release.md) | **Audit gate** — invariants hold, then cut v0.1.0 | ☐ |
 | 12 | [phase-12-port-management.md](phase-12-port-management.md) | Inspect local ports and safely terminate selected owning processes | ☑ |
 | 13 | [phase-13-terminal-mosaic.md](phase-13-terminal-mosaic.md) | Replace horizontal tabs with a searchable Navigator and four-pane Mosaic canvas | ☑ |
+| 14 | [phase-14-storage-contract.md](phase-14-storage-contract.md) | One owner for every persisted byte: paths, manifest, quarantine, uninstall policy | ☑ |
+| 15 | [phase-15-data-migrations.md](phase-15-data-migrations.md) | Upgrades never strand data: migration engine, backups, golden fixtures | ☑ |
+| 16 | [phase-16-update-check.md](phase-16-update-check.md) | Startup GitHub release check with a dismissible notify-and-link prompt | ☑ |
 
 > Note on ordering: `PLAN.md` §35 places the architecture checkpoint after Phase 5. It is placed after **Phase 4** here because every item on that checklist is already testable once multi-tab works, and catching a boundary violation before shell detection is written is cheaper. Move it back one row if you prefer to follow §35 literally.
 
@@ -40,6 +43,14 @@ destructive operating-system feature into v0.1.0.
 Phase 13 promotes the Split Panes backlog item after explicit approval of the
 Concept B Mosaic direction. It is renderer-only and does not widen the PTY or IPC
 surface.
+
+Phases 14–16 were scoped 2026-09-01 around the first public release. Their
+order is deliberate: 14 writes down the storage contract (paths, manifest,
+quarantine), 15 builds the migration policy and engine on that anchor while
+both stores are still at schema v1, and 16 — which promotes only the
+*notification* half of Phase 11's auto-update exclusion — can then promise
+that upgrading is safe for existing data. Silent download-and-install remains
+in `BACKLOG.md`, blocked on code signing.
 
 > **Deviation, recorded:** Phase 12 was implemented 2026-08-28 on explicit
 > instruction while Checkpoint B was still unrun. It changed no pre-existing
