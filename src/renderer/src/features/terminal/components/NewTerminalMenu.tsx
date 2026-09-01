@@ -52,7 +52,8 @@ export const NewTerminalMenu = ({
         aria-label="New terminal"
         onClick={onCreate}
       >
-        +
+        <span aria-hidden="true">＋</span>
+        New Terminal
       </button>
 
       <button
@@ -64,7 +65,7 @@ export const NewTerminalMenu = ({
         disabled={profiles.length === 0}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        ⌄
+        ▾
       </button>
 
       {open && (

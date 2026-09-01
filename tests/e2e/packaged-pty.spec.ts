@@ -46,7 +46,7 @@ test.describe('the packaged native module', () => {
     const gitdeck = await launchPackaged()
 
     try {
-      await expect(gitdeck.page.locator('.terminal-tab')).toHaveCount(1)
+      await expect(gitdeck.page.locator('.terminal-session-item')).toHaveCount(1)
 
       // A prompt only appears if node-pty loaded and a shell actually started.
       await expect.poll(() => activeScreen(gitdeck.page), { timeout: 30_000 }).toMatch(/\$|>|#/)

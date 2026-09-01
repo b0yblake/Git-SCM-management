@@ -27,6 +27,7 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 | 11 | [phase-11-packaging.md](phase-11-packaging.md) | Installer that works with no dev tooling present | ◐ |
 | — | [checkpoint-b-pre-release.md](checkpoint-b-pre-release.md) | **Audit gate** — invariants hold, then cut v0.1.0 | ☐ |
 | 12 | [phase-12-port-management.md](phase-12-port-management.md) | Inspect local ports and safely terminate selected owning processes | ☑ |
+| 13 | [phase-13-terminal-mosaic.md](phase-13-terminal-mosaic.md) | Replace horizontal tabs with a searchable Navigator and four-pane Mosaic canvas | ☑ |
 
 > Note on ordering: `PLAN.md` §35 places the architecture checkpoint after Phase 5. It is placed after **Phase 4** here because every item on that checklist is already testable once multi-tab works, and catching a boundary violation before shell detection is written is cheaper. Move it back one row if you prefer to follow §35 literally.
 
@@ -35,6 +36,10 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 Phase 12 is the first post-v0.1.0 upgrade. It stays after Checkpoint B so the
 existing release boundary can be audited and cut without silently pulling a
 destructive operating-system feature into v0.1.0.
+
+Phase 13 promotes the Split Panes backlog item after explicit approval of the
+Concept B Mosaic direction. It is renderer-only and does not widen the PTY or IPC
+surface.
 
 > **Deviation, recorded:** Phase 12 was implemented 2026-08-28 on explicit
 > instruction while Checkpoint B was still unrun. It changed no pre-existing

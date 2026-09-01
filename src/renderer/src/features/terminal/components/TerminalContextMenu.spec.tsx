@@ -37,7 +37,7 @@ describe('the command list', () => {
       'Copy',
       'Paste',
       'Clear',
-      'Rename tab',
+      'Rename terminal',
       'Duplicate terminal',
       'Close terminal'
     ])

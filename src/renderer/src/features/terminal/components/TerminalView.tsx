@@ -14,6 +14,8 @@ export interface TerminalViewProps {
    * explicitly. Defaults to true for a single-terminal layout.
    */
   readonly isActive?: boolean
+  /** Visible panes must be re-fit even when another pane owns keyboard focus. */
+  readonly isVisible?: boolean
   /** From settings. Applied to a live terminal rather than rebuilding it. */
   readonly fontSize?: number
   readonly cursorBlink?: boolean
@@ -27,10 +29,10 @@ export interface TerminalViewProps {
 }
 
 const THEME = {
-  background: '#1e1e1e',
-  foreground: '#e6e6e6',
-  cursor: '#e6e6e6',
-  selectionBackground: '#3a3d41'
+  background: '#0c1117',
+  foreground: '#e6edf3',
+  cursor: '#e6edf3',
+  selectionBackground: '#23466d'
 } as const
 
 /**
@@ -45,6 +47,7 @@ const THEME = {
 export const TerminalView = ({
   sessionId,
   isActive = true,
+  isVisible = true,
   fontSize = DEFAULT_SETTINGS.terminalFontSize,
   cursorBlink = DEFAULT_SETTINGS.terminalCursorBlink,
   onRename,
@@ -167,13 +170,13 @@ export const TerminalView = ({
     syncSizeRef.current?.()
   }, [fontSize, cursorBlink])
 
-  // A panel that was hidden could not be measured while it was hidden, so its
-  // dimensions are stale the moment it is shown again.
+  // A parked pane has no measurable layout. Re-fit every pane as it becomes
+  // visible; only the focused one receives keyboard focus.
   useEffect(() => {
-    if (!isActive) return
+    if (!isVisible) return
     syncSizeRef.current?.()
-    terminalRef.current?.focus()
-  }, [isActive])
+    if (isActive) terminalRef.current?.focus()
+  }, [isActive, isVisible])
 
   /**
    * Copy, Paste and Clear act on the xterm instance, which is why they live
@@ -198,7 +201,7 @@ export const TerminalView = ({
       case 'Clear':
         terminal?.clear()
         return
-      case 'Rename tab':
+      case 'Rename terminal':
         onRename?.()
         return
       case 'Duplicate terminal':

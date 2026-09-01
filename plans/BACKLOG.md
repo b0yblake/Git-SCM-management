@@ -9,6 +9,10 @@
 
 ## Split Panes
 
+> **Promoted 2026-09-01:** this scope is now Phase 13 —
+> [Terminal Mosaic](phase-13-terminal-mosaic.md). The backlog description below is
+> retained as the architectural origin; implementation is governed by the phase plan.
+
 **Depends on:** terminal sessions, renderer layout.
 **Does not require:** terminal engine rewrite, workspace rewrite, Git rewrite.
 

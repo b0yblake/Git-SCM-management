@@ -41,14 +41,18 @@ describe('renderer test project', () => {
 })
 
 /**
- * App is a shell now — the tab behaviour it delegates to lives in
- * `TerminalTabs.spec.tsx`.
+ * App owns only the activity rail and feature drawers. Terminal lifecycle and
+ * Mosaic behavior live in `TerminalDeck.spec.tsx`.
  */
 describe('App', () => {
   it('mounts the terminal workspace', async () => {
     render(<App />)
 
-    await waitFor(() => expect(screen.getByRole('tablist', { name: 'Terminals' })).toBeDefined())
+    await waitFor(() =>
+      expect(screen.getByRole('complementary', { name: 'Terminal Navigator' })).toBeDefined()
+    )
+    expect(screen.getByRole('main', { name: 'Terminal mosaic' })).toBeDefined()
+    expect(screen.queryByRole('tablist')).toBeNull()
   })
 
   it('ends up with one open terminal without dictating a cwd', async () => {

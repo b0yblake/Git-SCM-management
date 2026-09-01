@@ -1,12 +1,22 @@
 // Public surface of the renderer terminal feature (ARCHITECTURE.md §4).
-export { TerminalTabs } from './components/TerminalTabs'
+export { TerminalDeck } from './components/TerminalDeck'
+export { TerminalNavigator, type TerminalNavigatorProps } from './components/TerminalNavigator'
+export {
+  TerminalLayoutToolbar,
+  type TerminalLayoutToolbarProps
+} from './components/TerminalLayoutToolbar'
 export { TerminalView, type TerminalViewProps } from './components/TerminalView'
-export { TerminalTabBar, type TerminalTabBarProps } from './components/TerminalTabBar'
 export {
   useTerminalSession,
   type TerminalSessionHandle,
   type TerminalViewStatus
 } from './hooks/useTerminalSession'
-export { useTerminalTabs, type TerminalTabsController } from './hooks/useTerminalTabs'
+export { useTerminalSessions, type TerminalSessionsController } from './hooks/useTerminalSessions'
 export { useShellProfiles, type ShellProfilesState } from './hooks/useShellProfiles'
-export { useTerminalStore, type TerminalUiState } from './store/terminalStore'
+export {
+  TERMINAL_LAYOUT_CAPACITY,
+  TERMINAL_LAYOUT_MODES,
+  useTerminalStore,
+  type TerminalLayoutMode,
+  type TerminalUiState
+} from './store/terminalStore'

@@ -1,75 +1,198 @@
 import { create } from 'zustand'
 import type { TerminalSessionInfo } from '@shared/contracts/terminal'
 
+export const TERMINAL_LAYOUT_MODES = ['focus', 'columns', 'main-side', 'grid'] as const
+
+export type TerminalLayoutMode = (typeof TERMINAL_LAYOUT_MODES)[number]
+
+export const TERMINAL_LAYOUT_CAPACITY: Readonly<Record<TerminalLayoutMode, number>> = {
+  focus: 1,
+  columns: 2,
+  'main-side': 3,
+  grid: 4
+}
+
 /**
- * Renderer-side terminal metadata. Everything here is serializable — an xterm
- * instance or a PTY handle must never reach this store (ARCHITECTURE.md §8),
- * which `terminalStore.spec.ts` enforces with a JSON round-trip.
+ * Serializable renderer state. Live PTYs remain in Main and xterm instances
+ * remain in TerminalView refs; layout only stores session ids.
  */
 export interface TerminalUiState {
   readonly sessions: Record<string, TerminalSessionInfo>
   readonly order: string[]
+  /** The visible terminal that receives keyboard focus and pane commands. */
   readonly activeSessionId: string | null
+  /** Sessions currently assigned to the canvas, in pane order. */
+  readonly visibleSessionIds: string[]
+  readonly layoutMode: TerminalLayoutMode
 }
 
 export interface TerminalStore extends TerminalUiState {
-  /** A newly opened terminal becomes the active one — the documented choice. */
   addSession(info: TerminalSessionInfo): void
   removeSession(sessionId: string): void
+  /** Shows a parked session when necessary, then focuses it. */
   setActive(sessionId: string): void
+  /** Removes a session from the canvas without closing its process. */
+  hideSession(sessionId: string): void
+  setLayoutMode(mode: TerminalLayoutMode): void
   renameSession(sessionId: string, title: string): void
   markExited(sessionId: string, exitCode: number): void
   reset(): void
 }
 
-const EMPTY: TerminalUiState = { sessions: {}, order: [], activeSessionId: null }
+const EMPTY: TerminalUiState = {
+  sessions: {},
+  order: [],
+  activeSessionId: null,
+  visibleSessionIds: [],
+  layoutMode: 'grid'
+}
 
-/**
- * When the active tab closes, focus moves to the tab on its right, falling back
- * to the one on its left. That keeps repeated closes moving in one direction
- * instead of bouncing.
- */
 const neighbourOf = (order: string[], removedIndex: number): string | null =>
   order[removedIndex] ?? order[removedIndex - 1] ?? null
+
+const uniqueKnown = (
+  ids: readonly string[],
+  sessions: Readonly<Record<string, TerminalSessionInfo>>
+): string[] => {
+  const seen = new Set<string>()
+  return ids.filter((id) => {
+    if (!sessions[id] || seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
+const fillVisible = (
+  visible: readonly string[],
+  order: readonly string[],
+  sessions: Readonly<Record<string, TerminalSessionInfo>>,
+  capacity: number
+): string[] => {
+  const next = uniqueKnown(visible, sessions).slice(0, capacity)
+  for (const id of order) {
+    if (next.length >= capacity) break
+    if (sessions[id] && !next.includes(id)) next.push(id)
+  }
+  return next
+}
+
+const keepActiveVisible = (
+  visible: readonly string[],
+  activeSessionId: string | null,
+  sessions: Readonly<Record<string, TerminalSessionInfo>>,
+  capacity: number
+): string[] => {
+  const next = uniqueKnown(visible, sessions).slice(0, capacity)
+  if (!activeSessionId || !sessions[activeSessionId] || next.includes(activeSessionId)) return next
+
+  if (next.length < capacity) next.push(activeSessionId)
+  else next[capacity - 1] = activeSessionId
+  return next
+}
 
 export const useTerminalStore = create<TerminalStore>((set) => ({
   ...EMPTY,
 
   addSession: (info) =>
-    set((state) =>
-      state.sessions[info.id]
-        ? state
-        : {
-            sessions: { ...state.sessions, [info.id]: info },
-            order: [...state.order, info.id],
-            activeSessionId: info.id
-          }
-    ),
+    set((state) => {
+      if (state.sessions[info.id]) return state
+
+      const sessions = { ...state.sessions, [info.id]: info }
+      const order = [...state.order, info.id]
+      const capacity = TERMINAL_LAYOUT_CAPACITY[state.layoutMode]
+      const visibleSessionIds = uniqueKnown(state.visibleSessionIds, sessions).slice(0, capacity)
+
+      if (visibleSessionIds.length < capacity) visibleSessionIds.push(info.id)
+      else {
+        const focusedPane = state.activeSessionId
+          ? visibleSessionIds.indexOf(state.activeSessionId)
+          : -1
+        visibleSessionIds[focusedPane >= 0 ? focusedPane : capacity - 1] = info.id
+      }
+
+      return { sessions, order, activeSessionId: info.id, visibleSessionIds }
+    }),
 
   removeSession: (sessionId) =>
     set((state) => {
       if (!state.sessions[sessionId]) return state
 
-      const index = state.order.indexOf(sessionId)
+      const removedIndex = state.order.indexOf(sessionId)
       const order = state.order.filter((id) => id !== sessionId)
       const { [sessionId]: _removed, ...sessions } = state.sessions
+      const activeSessionId =
+        state.activeSessionId === sessionId
+          ? neighbourOf(order, removedIndex)
+          : state.activeSessionId
+      const capacity = TERMINAL_LAYOUT_CAPACITY[state.layoutMode]
+      let visibleSessionIds = state.visibleSessionIds.filter((id) => id !== sessionId)
 
-      return {
-        sessions,
-        order,
-        activeSessionId:
-          state.activeSessionId === sessionId ? neighbourOf(order, index) : state.activeSessionId
-      }
+      visibleSessionIds = keepActiveVisible(visibleSessionIds, activeSessionId, sessions, capacity)
+      visibleSessionIds = fillVisible(visibleSessionIds, order, sessions, capacity)
+
+      return { sessions, order, activeSessionId, visibleSessionIds }
     }),
 
   setActive: (sessionId) =>
-    set((state) => (state.sessions[sessionId] ? { activeSessionId: sessionId } : state)),
+    set((state) => {
+      if (!state.sessions[sessionId]) return state
+      if (state.visibleSessionIds.includes(sessionId)) return { activeSessionId: sessionId }
+
+      const capacity = TERMINAL_LAYOUT_CAPACITY[state.layoutMode]
+      const visibleSessionIds = uniqueKnown(state.visibleSessionIds, state.sessions).slice(
+        0,
+        capacity
+      )
+
+      if (visibleSessionIds.length < capacity) visibleSessionIds.push(sessionId)
+      else {
+        const focusedPane = state.activeSessionId
+          ? visibleSessionIds.indexOf(state.activeSessionId)
+          : -1
+        visibleSessionIds[focusedPane >= 0 ? focusedPane : capacity - 1] = sessionId
+      }
+
+      return { activeSessionId: sessionId, visibleSessionIds }
+    }),
+
+  hideSession: (sessionId) =>
+    set((state) => {
+      if (!state.visibleSessionIds.includes(sessionId)) return state
+      const visibleSessionIds = state.visibleSessionIds.filter((id) => id !== sessionId)
+      return {
+        visibleSessionIds,
+        activeSessionId:
+          state.activeSessionId === sessionId
+            ? (visibleSessionIds[0] ?? null)
+            : state.activeSessionId
+      }
+    }),
+
+  setLayoutMode: (layoutMode) =>
+    set((state) => {
+      if (layoutMode === state.layoutMode) return state
+      const capacity = TERMINAL_LAYOUT_CAPACITY[layoutMode]
+      const preferredActive =
+        state.activeSessionId ?? state.visibleSessionIds[0] ?? state.order[0] ?? null
+      let visibleSessionIds = keepActiveVisible(
+        state.visibleSessionIds,
+        preferredActive,
+        state.sessions,
+        capacity
+      )
+      visibleSessionIds = fillVisible(visibleSessionIds, state.order, state.sessions, capacity)
+      const activeSessionId =
+        preferredActive && visibleSessionIds.includes(preferredActive)
+          ? preferredActive
+          : (visibleSessionIds[0] ?? null)
+
+      return { layoutMode, visibleSessionIds, activeSessionId }
+    }),
 
   renameSession: (sessionId, title) =>
     set((state) => {
       const session = state.sessions[sessionId]
       if (!session) return state
-
       return {
         sessions: {
           ...state.sessions,
@@ -82,7 +205,6 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
     set((state) => {
       const session = state.sessions[sessionId]
       if (!session) return state
-
       return {
         sessions: {
           ...state.sessions,

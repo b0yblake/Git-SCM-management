@@ -57,6 +57,9 @@
     "vitest": "^4.1.11",
     "zustand": "^5.0.15"
   },
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "productName": "GitDeck",
   "author": {
     "name": "GitDeck"

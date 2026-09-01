@@ -21,7 +21,7 @@ const toInput = (workspace: Workspace): WorkspaceInput => ({
  * Wires the workspace feature together.
  *
  * The components below it are presentational; every IPC call happens in the
- * hooks this component uses. Mirrors `TerminalTabs` for the terminal feature.
+ * hooks this component uses. Mirrors `TerminalDeck` for the terminal feature.
  */
 export const WorkspacePanel = (): React.JSX.Element => {
   const workspaces = useWorkspaces()

@@ -3,40 +3,42 @@
 @import './git.css';
 @import './ports.css';
 
-/*
- * One place for colour and spacing. Every other stylesheet reads from here, so
- * a theme change is a change to this block rather than a search for hex codes.
- */
 :root {
   color-scheme: dark;
 
-  --surface: #1e1e1e;
-  --surface-raised: #202020;
-  --surface-sunken: #181818;
-  --surface-control: #2b2b2b;
-  --surface-control-hover: #3a3a3a;
+  --surface: #0d1117;
+  --surface-raised: #111821;
+  --surface-sunken: #090d12;
+  --surface-control: #18212c;
+  --surface-control-hover: #202c39;
+  --surface-selected: #17263a;
 
-  --border: #333;
-  --border-strong: #3c3c3c;
+  --border: #25303c;
+  --border-strong: #344252;
 
-  --text: #e6e6e6;
-  --text-muted: #9a9a9a;
-  --text-faint: #8a8a8a;
-  --text-disabled: #6a6a6a;
+  --text: #e6edf3;
+  --text-muted: #9ba8b5;
+  --text-faint: #718090;
+  --text-disabled: #566271;
 
-  --accent: #4a9eff;
-  --danger: #f0857d;
+  --accent: #2f81f7;
+  --accent-strong: #58a6ff;
+  --accent-surface: #102b4c;
+  --success: #3fb950;
+  --danger: #f47067;
   --danger-surface: #3a2020;
-  --warning: #e6c07b;
+  --warning: #d29922;
   --warning-surface: #3a3320;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
 
-  --radius: 4px;
-  --font-ui: 'Segoe UI', system-ui, sans-serif;
+  --radius-sm: 4px;
+  --radius: 7px;
+  --font-ui: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --font-small: 0.8125rem;
   --font-tiny: 0.75rem;
 
@@ -60,10 +62,35 @@ body {
   color: var(--text);
 }
 
-/* Nothing is reachable by mouse alone, so focus has to be visible. */
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .app {
@@ -71,45 +98,137 @@ body {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--surface);
 }
 
 .app-shell {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
-.app-shell__side {
+.app-shell__content {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  /* A rail, not "as wide as whatever is inside it" — the settings select was
-     stretching the whole column to twice this. */
-  width: 17rem;
-  flex: none;
-  min-height: 0;
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-}
-
-.app-shell__side .workspace-panel {
   flex: 1;
+  min-width: 0;
   min-height: 0;
-  border-right: none;
+  overflow: hidden;
 }
 
-.app-shell__status {
-  margin: 0;
-  padding: var(--space-4);
-  color: var(--text-muted);
+.activity-rail {
+  z-index: 35;
+  display: flex;
+  width: 4.5rem;
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  border-right: 1px solid var(--border);
+  background: #0b1016;
 }
 
-.app-shell__status--error {
-  color: var(--danger);
+.activity-rail__brand {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: var(--space-3) auto var(--space-4);
+  place-items: center;
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, #2380ed, #2557c7);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-/* An empty pane should explain itself rather than sit blank. */
-.empty-state {
+.activity-rail__items {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.activity-rail__button {
+  position: relative;
+  display: flex;
+  min-height: 4.1rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: var(--space-2) var(--space-1);
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.activity-rail__button:last-child {
+  margin-top: auto;
+  margin-bottom: var(--space-2);
+}
+
+.activity-rail__button::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+  content: '';
+}
+
+.activity-rail__button:hover {
+  color: var(--text);
+  background: rgb(255 255 255 / 3%);
+}
+
+.activity-rail__button[aria-current='page'] {
+  color: var(--accent-strong);
+  background: var(--surface-selected);
+}
+
+.activity-rail__button[aria-current='page']::before {
+  background: var(--accent);
+}
+
+.activity-rail__button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.activity-rail__button span {
+  font-size: 0.68rem;
+}
+
+.tool-drawer {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: 19rem;
+  border-right: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  box-shadow: 14px 0 32px rgb(0 0 0 / 24%);
+  overflow: hidden;
+}
+
+.tool-drawer__panel {
+  height: 100%;
+  overflow: auto;
+}
+
+.tool-drawer__panel > * {
+  min-height: 100%;
+}
+
+.empty-state,
+.terminal-mosaic__empty {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -120,13 +239,16 @@ body {
   text-align: center;
 }
 
-.empty-state__title {
+.empty-state__title,
+.empty-state__hint {
   margin: 0;
+}
+
+.empty-state__title {
   color: var(--text-muted);
 }
 
 .empty-state__hint {
-  margin: 0;
   max-width: 24rem;
   color: var(--text-faint);
   font-size: var(--font-small);
@@ -164,7 +286,7 @@ body {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-control);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 45%);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 45%);
   font-size: var(--font-small);
 }
 
@@ -183,7 +305,6 @@ body {
   background: transparent;
   color: inherit;
   font-size: 1rem;
-  line-height: 1;
   cursor: pointer;
 }
 
@@ -194,7 +315,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(0 0 0 / 45%);
+  background: rgb(0 0 0 / 55%);
 }
 
 .dialog {
@@ -204,7 +325,7 @@ body {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-raised);
-  box-shadow: 0 8px 32px rgb(0 0 0 / 50%);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 55%);
 }
 
 .dialog__title {
@@ -222,10 +343,9 @@ body {
 .settings-screen button {
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--border-strong);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--surface-control);
   color: var(--text);
-  font: inherit;
   cursor: pointer;
 }
 
@@ -241,47 +361,46 @@ body {
 
 .context-menu {
   position: fixed;
-  min-width: 12rem;
+  min-width: 13rem;
   margin: 0;
   padding: var(--space-1) 0;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  background: #252526;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+  background: var(--surface-control);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
   list-style: none;
 }
 
 .context-menu button {
   display: block;
   width: 100%;
-  padding: var(--space-1) var(--space-3);
+  padding: 0.45rem var(--space-3);
   border: none;
   background: transparent;
-  color: #d4d4d4;
-  font: inherit;
+  color: var(--text);
   text-align: left;
   cursor: pointer;
 }
 
 .context-menu button:hover,
 .context-menu button:focus-visible {
-  background: #04395e;
+  background: var(--accent-surface);
 }
 
 .settings-screen {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  border-top: 1px solid var(--border);
+  gap: var(--space-2);
+  min-height: 100%;
+  padding: var(--space-4);
   background: var(--surface-raised);
 }
 
 .settings-screen h2 {
-  margin: 0 0 var(--space-1);
+  margin: 0 0 var(--space-2);
   color: var(--text-muted);
   font-size: var(--font-small);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -301,16 +420,29 @@ body {
 .settings-screen select {
   min-width: 0;
   max-width: 100%;
-  padding: var(--space-1);
+  padding: var(--space-2);
   border: 1px solid var(--border-strong);
-  border-radius: 3px;
-  background: #1a1a1a;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
   color: var(--text);
-  font: inherit;
 }
 
 .settings-screen__error {
   margin: 0;
   color: var(--danger);
   font-size: var(--font-tiny);
+}
+
+@media (max-width: 980px) {
+  .activity-rail {
+    width: 3.5rem;
+  }
+
+  .activity-rail__button span {
+    display: none;
+  }
+
+  .activity-rail__button {
+    min-height: 3.5rem;
+  }
 }

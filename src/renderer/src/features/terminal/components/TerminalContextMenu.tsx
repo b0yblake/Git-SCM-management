@@ -9,7 +9,7 @@ export const TERMINAL_MENU_COMMANDS = [
   'Copy',
   'Paste',
   'Clear',
-  'Rename tab',
+  'Rename terminal',
   'Duplicate terminal',
   'Close terminal'
 ] as const

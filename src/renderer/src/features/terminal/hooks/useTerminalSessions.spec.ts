@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TerminalSessionInfo } from '@shared/contracts/terminal'
 import { createFakeGitDeckApi, type FakeGitDeckApi } from '../../../testing/fakeGitDeckApi'
 import { useTerminalStore } from '../store/terminalStore'
-import { useTerminalTabs } from './useTerminalTabs'
+import { useTerminalSessions } from './useTerminalSessions'
 
 let api: FakeGitDeckApi
 let created = 0
@@ -24,7 +24,7 @@ const withIncrementingIds = (): void => {
   }
 }
 
-const mount = () => renderHook(() => useTerminalTabs())
+const mount = () => renderHook(() => useTerminalSessions())
 
 beforeEach(() => {
   created = 0
@@ -105,7 +105,7 @@ describe('closing', () => {
   /** The Phase 10 setting, doing the one thing it exists to do. */
   it('skips the ask entirely when the user has turned confirmation off', async () => {
     const { result } = renderHook(() =>
-      useTerminalTabs({ confirmBeforeClosingRunningTerminal: false })
+      useTerminalSessions({ confirmBeforeClosingRunningTerminal: false })
     )
     await act(() => result.current.openTerminal())
 
@@ -166,7 +166,7 @@ describe('closing', () => {
 })
 
 describe('switching', () => {
-  const openThree = async (result: { current: ReturnType<typeof useTerminalTabs> }) => {
+  const openThree = async (result: { current: ReturnType<typeof useTerminalSessions> }) => {
     for (let i = 0; i < 3; i++) await act(() => result.current.openTerminal())
   }
 

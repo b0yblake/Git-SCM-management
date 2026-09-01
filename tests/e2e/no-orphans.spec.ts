@@ -52,8 +52,11 @@ test('closing the packaged app leaves no shell behind', async () => {
   expect(rootPid).toBeDefined()
 
   await expect.poll(() => activeScreen(gitdeck.page), { timeout: 30_000 }).toMatch(/\$|>|#/)
-  await gitdeck.page.getByRole('button', { name: 'New terminal' }).click()
-  await expect(gitdeck.page.locator('.terminal-tab')).toHaveCount(2)
+  await gitdeck.page
+    .getByRole('complementary', { name: 'Terminal Navigator' })
+    .getByRole('button', { name: 'New terminal' })
+    .click()
+  await expect(gitdeck.page.locator('.terminal-session-item')).toHaveCount(2)
 
   // Guards the guard: with nothing found, the assertion after close would be
   // vacuously true.

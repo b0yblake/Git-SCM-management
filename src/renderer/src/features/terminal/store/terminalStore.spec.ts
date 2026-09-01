@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { TerminalSessionInfo } from '@shared/contracts/terminal'
-import { useTerminalStore } from './terminalStore'
+import { TERMINAL_LAYOUT_CAPACITY, useTerminalStore } from './terminalStore'
 
 const session = (id: string, title = id): TerminalSessionInfo => ({
   id,
@@ -16,175 +16,147 @@ const seed = (...ids: string[]): void => {
 }
 
 beforeEach(() => {
-  useTerminalStore.getState().reset()
+  store().reset()
 })
 
-describe('addSession', () => {
-  it('appends to order and activates the first session', () => {
-    store().addSession(session('a'))
-
-    expect(store().order).toEqual(['a'])
-    expect(store().activeSessionId).toBe('a')
+describe('Mosaic defaults and session creation', () => {
+  it('starts in the four-pane Grid layout', () => {
+    expect(store().layoutMode).toBe('grid')
+    expect(TERMINAL_LAYOUT_CAPACITY[store().layoutMode]).toBe(4)
+    expect(store().visibleSessionIds).toEqual([])
   })
 
-  it('activates a newly opened terminal — the documented choice', () => {
-    seed('a', 'b')
+  it('fills four panes in creation order', () => {
+    seed('a', 'b', 'c', 'd')
 
-    expect(store().order).toEqual(['a', 'b'])
-    expect(store().activeSessionId).toBe('b')
+    expect(store().order).toEqual(['a', 'b', 'c', 'd'])
+    expect(store().visibleSessionIds).toEqual(['a', 'b', 'c', 'd'])
+    expect(store().activeSessionId).toBe('d')
   })
 
-  it('ignores a duplicate id rather than reordering', () => {
-    seed('a', 'b')
+  it('puts a fifth session in the focused pane without closing the parked one', () => {
+    seed('a', 'b', 'c', 'd', 'e')
 
-    store().addSession(session('a', 'renamed by accident'))
+    expect(store().order).toEqual(['a', 'b', 'c', 'd', 'e'])
+    expect(store().visibleSessionIds).toEqual(['a', 'b', 'c', 'e'])
+    expect(store().sessions['d']).toBeDefined()
+    expect(store().activeSessionId).toBe('e')
+  })
+
+  it('ignores duplicate session ids', () => {
+    seed('a', 'b')
+    store().addSession(session('a', 'accidental rename'))
 
     expect(store().order).toEqual(['a', 'b'])
+    expect(store().visibleSessionIds).toEqual(['a', 'b'])
     expect(store().sessions['a']?.definition.title).toBe('a')
   })
 })
 
-describe('removeSession', () => {
-  it('removes from both sessions and order', () => {
-    seed('a', 'b')
+describe('layout presets', () => {
+  beforeEach(() => seed('a', 'b', 'c', 'd'))
 
-    store().removeSession('a')
+  it('keeps the focused terminal when switching to Focus', () => {
+    store().setActive('c')
+    store().setLayoutMode('focus')
 
-    expect(store().order).toEqual(['b'])
-    expect(store().sessions['a']).toBeUndefined()
-  })
-
-  it('activates the tab on the right when the active one closes', () => {
-    seed('a', 'b', 'c')
-    store().setActive('b')
-
-    store().removeSession('b')
-
+    expect(store().visibleSessionIds).toEqual(['c'])
     expect(store().activeSessionId).toBe('c')
   })
 
-  it('falls back to the tab on the left when the last one closes', () => {
-    seed('a', 'b')
+  it('fills newly available panes when expanding again', () => {
+    store().setActive('c')
+    store().setLayoutMode('focus')
+    store().setLayoutMode('grid')
 
+    expect(store().visibleSessionIds).toEqual(['c', 'a', 'b', 'd'])
+    expect(store().activeSessionId).toBe('c')
+  })
+
+  it('obeys every preset capacity', () => {
+    store().setLayoutMode('focus')
+    expect(store().visibleSessionIds).toHaveLength(1)
+    store().setLayoutMode('columns')
+    expect(store().visibleSessionIds).toHaveLength(2)
+    store().setLayoutMode('main-side')
+    expect(store().visibleSessionIds).toHaveLength(3)
+    store().setLayoutMode('grid')
+    expect(store().visibleSessionIds).toHaveLength(4)
+  })
+})
+
+describe('focus, parking, and closing', () => {
+  it('shows a parked session in the focused pane without reordering sessions', () => {
+    seed('a', 'b', 'c', 'd', 'e')
+    store().setActive('d')
+
+    expect(store().order).toEqual(['a', 'b', 'c', 'd', 'e'])
+    expect(store().visibleSessionIds).toEqual(['a', 'b', 'c', 'd'])
+    expect(store().activeSessionId).toBe('d')
+  })
+
+  it('parking removes only the canvas assignment', () => {
+    seed('a', 'b')
+    store().hideSession('b')
+
+    expect(store().visibleSessionIds).toEqual(['a'])
+    expect(store().order).toEqual(['a', 'b'])
+    expect(store().sessions['b']).toBeDefined()
+    expect(store().activeSessionId).toBe('a')
+  })
+
+  it('can park every terminal and restore one through focus', () => {
+    seed('a')
+    store().hideSession('a')
+    expect(store().visibleSessionIds).toEqual([])
+    expect(store().activeSessionId).toBeNull()
+
+    store().setActive('a')
+    expect(store().visibleSessionIds).toEqual(['a'])
+    expect(store().activeSessionId).toBe('a')
+  })
+
+  it('closing a focused terminal selects a safe neighbour and fills the canvas', () => {
+    seed('a', 'b', 'c', 'd', 'e')
+    store().setActive('b')
     store().removeSession('b')
 
-    expect(store().activeSessionId).toBe('a')
+    expect(store().order).toEqual(['a', 'c', 'd', 'e'])
+    expect(store().activeSessionId).toBe('c')
+    expect(store().visibleSessionIds).toEqual(['a', 'c', 'e', 'd'])
+    expect(store().visibleSessionIds).toContain(store().activeSessionId)
   })
 
-  it('clears the active id when the only session closes', () => {
-    seed('a')
+  it('closing a parked terminal leaves visible panes unchanged', () => {
+    seed('a', 'b', 'c', 'd', 'e')
+    const before = [...store().visibleSessionIds]
+    store().removeSession('d')
 
-    store().removeSession('a')
-
-    expect(store().order).toEqual([])
-    expect(store().activeSessionId).toBeNull()
-  })
-
-  it('leaves the active id alone when a different tab closes', () => {
-    seed('a', 'b', 'c')
-    store().setActive('a')
-
-    store().removeSession('c')
-
-    expect(store().activeSessionId).toBe('a')
-  })
-
-  it('ignores an unknown id', () => {
-    seed('a')
-
-    store().removeSession('nope')
-
-    expect(store().order).toEqual(['a'])
+    expect(store().visibleSessionIds).toEqual(before)
+    expect(store().sessions['d']).toBeUndefined()
   })
 })
 
-describe('setActive', () => {
-  it('activates a known session', () => {
+describe('session metadata and serializability', () => {
+  it('renames and marks exited sessions without changing layout', () => {
     seed('a', 'b')
-
-    store().setActive('a')
-
-    expect(store().activeSessionId).toBe('a')
-  })
-
-  it('is a no-op for an unknown id rather than a crash', () => {
-    seed('a')
-
-    expect(() => store().setActive('nope')).not.toThrow()
-    expect(store().activeSessionId).toBe('a')
-  })
-})
-
-describe('renameSession', () => {
-  it('changes only the title', () => {
-    seed('a', 'b')
-    store().setActive('a')
+    const visible = [...store().visibleSessionIds]
 
     store().renameSession('a', 'Backend')
+    store().markExited('b', 130)
 
     expect(store().sessions['a']?.definition.title).toBe('Backend')
-    expect(store().order).toEqual(['a', 'b'])
-    expect(store().activeSessionId).toBe('a')
+    expect(store().sessions['b']?.status).toBe('exited')
+    expect(store().visibleSessionIds).toEqual(visible)
   })
 
-  it('leaves the rest of the definition untouched', () => {
-    seed('a')
-    const before = store().sessions['a']?.definition
-
-    store().renameSession('a', 'Renamed')
-
-    expect(store().sessions['a']?.definition.cwd).toBe(before?.cwd)
-    expect(store().sessions['a']?.definition.id).toBe(before?.id)
-  })
-
-  it('ignores an unknown id', () => {
-    seed('a')
-
-    expect(() => store().renameSession('nope', 'x')).not.toThrow()
-  })
-})
-
-describe('markExited', () => {
-  it('records the status and code without closing the tab', () => {
-    seed('a')
-
-    store().markExited('a', 130)
-
-    expect(store().sessions['a']?.status).toBe('exited')
-    expect(store().sessions['a']?.exitCode).toBe(130)
-    expect(store().order).toEqual(['a'])
-  })
-
-  it('ignores an unknown id', () => {
-    expect(() => store().markExited('nope', 0)).not.toThrow()
-  })
-})
-
-describe('serializability', () => {
-  it('order reflects creation order and survives renames', () => {
+  it('survives JSON and structured-clone round trips', () => {
     seed('a', 'b', 'c')
-
-    store().renameSession('b', 'zzz')
-
-    expect(store().order).toEqual(['a', 'b', 'c'])
-  })
-
-  /** Proves no xterm instance or PTY handle ever leaked into the store. */
-  it('the whole state survives a JSON round-trip', () => {
-    seed('a', 'b')
-    store().markExited('a', 0)
-
-    const { sessions, order, activeSessionId } = store()
-    const snapshot = { sessions, order, activeSessionId }
+    store().setLayoutMode('columns')
+    const { sessions, order, activeSessionId, visibleSessionIds, layoutMode } = store()
+    const snapshot = { sessions, order, activeSessionId, visibleSessionIds, layoutMode }
 
     expect(JSON.parse(JSON.stringify(snapshot))).toEqual(snapshot)
-  })
-
-  it('the whole state survives structuredClone', () => {
-    seed('a')
-
-    const { sessions, order, activeSessionId } = store()
-
-    expect(() => structuredClone({ sessions, order, activeSessionId })).not.toThrow()
+    expect(() => structuredClone(snapshot)).not.toThrow()
   })
 })

@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { activeScreen, launchPackaged, tabTitles } from './support'
+import { activeScreen, launchPackaged, sessionTitles } from './support'
 
 /**
  * The critical flow, end to end, against the packaged application.
@@ -14,7 +14,7 @@ import { activeScreen, launchPackaged, tabTitles } from './support'
  */
 
 const type = async (page: Page, text: string): Promise<void> => {
-  const input = page.locator('.terminal-tabs__panel:not([hidden]) .xterm-helper-textarea')
+  const input = page.locator('.terminal-pane--active .xterm-helper-textarea')
   await input.type(text)
 }
 
@@ -40,7 +40,7 @@ test('a user can work, save a workspace, restart and find it restored', async ()
 
   try {
     // 1–2. The app starts, visible, with a terminal.
-    await expect(first.page.locator('.terminal-tab')).toHaveCount(1)
+    await expect(first.page.locator('.terminal-session-item')).toHaveCount(1)
 
     // 3–4. Type into it and read the answer back.
     await expect.poll(() => activeScreen(first.page), { timeout: 30_000 }).toMatch(/\$|>|#/)
@@ -48,22 +48,26 @@ test('a user can work, save a workspace, restart and find it restored', async ()
     await expect.poll(() => activeScreen(first.page), { timeout: 30_000 }).toContain('smoke-hello')
 
     // 5. A second terminal.
-    await first.page.getByRole('button', { name: 'New terminal' }).click()
-    await expect(first.page.locator('.terminal-tab')).toHaveCount(2)
+    await first.page
+      .getByRole('complementary', { name: 'Terminal Navigator' })
+      .getByRole('button', { name: 'New terminal' })
+      .click()
+    await expect(first.page.locator('.terminal-session-item')).toHaveCount(2)
 
     // 6. Switching back finds the first terminal's output still there.
-    await first.page.locator('.terminal-tab__label').first().click()
+    await first.page.locator('.terminal-session-item__open').first().click()
     await expect.poll(() => activeScreen(first.page), { timeout: 20_000 }).toContain('smoke-hello')
 
     // 7. Closing one leaves the other alive.
-    await first.page.locator('.terminal-tab__close').last().click()
+    await first.page.locator('.terminal-session-item__close').last().click()
     // Scoped to the dialog: the tab's own close button is also named "Close
     // Terminal", because the tab happens to be called Terminal.
     await first.page.getByRole('dialog').getByRole('button', { name: 'Close terminal' }).click()
-    await expect(first.page.locator('.terminal-tab')).toHaveCount(1)
+    await expect(first.page.locator('.terminal-session-item')).toHaveCount(1)
     await expect.poll(() => activeScreen(first.page), { timeout: 20_000 }).toContain('smoke-hello')
 
     // 8. Author and save a workspace, with a terminal inside the git repo.
+    await first.page.getByRole('button', { name: 'Workspaces' }).click()
     await first.page.getByRole('button', { name: 'New workspace' }).click()
     await fillField(first.page, 'Workspace name', 'Smoke')
     await first.page.getByRole('button', { name: 'Add terminal' }).click()
@@ -73,7 +77,7 @@ test('a user can work, save a workspace, restart and find it restored', async ()
     await expect(first.page.getByRole('button', { name: 'Open Smoke' })).toBeVisible()
 
     await first.page.getByRole('button', { name: 'Open Smoke' }).click()
-    await expect.poll(() => tabTitles(first.page), { timeout: 20_000 }).toContain('Repo')
+    await expect.poll(() => sessionTitles(first.page), { timeout: 20_000 }).toContain('Repo')
 
     // 11. Inside a repository, the branch reaches the status bar.
     await expect(first.page.locator('.git-badge__branch')).toContainText('main', {
@@ -88,7 +92,8 @@ test('a user can work, save a workspace, restart and find it restored', async ()
 
   try {
     // 10. The workspace, its tab name and its directory all come back.
-    await expect.poll(() => tabTitles(second.page), { timeout: 30_000 }).toEqual(['Repo'])
+    await expect.poll(() => sessionTitles(second.page), { timeout: 30_000 }).toEqual(['Repo'])
+    await second.page.getByRole('button', { name: 'Workspaces' }).click()
     await expect(second.page.getByRole('button', { name: 'Open Smoke' })).toHaveAttribute(
       'aria-current',
       'true'

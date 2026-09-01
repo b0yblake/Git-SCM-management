@@ -10,7 +10,7 @@ export interface PendingClose {
   readonly title: string
 }
 
-export interface TerminalTabsController {
+export interface TerminalSessionsController {
   readonly openTerminal: (shellProfileId?: ShellProfileId) => Promise<void>
   /** Duplicating reuses an existing session's definition — no new IPC channel. */
   readonly duplicateTerminal: (sessionId: string) => Promise<void>
@@ -26,20 +26,20 @@ export interface TerminalTabsController {
   readonly lastError: IpcError | null
 }
 
-export interface TerminalTabsOptions {
+export interface TerminalSessionsOptions {
   /** From settings. Closing kills a shell, so this defaults on. */
   readonly confirmBeforeClosingRunningTerminal?: boolean
 }
 
 /**
- * Turns tab intents into IPC calls and store updates.
+ * Turns terminal-session intents into IPC calls and store updates.
  *
  * The bridge is used here rather than in components, so a component test can
- * assert the bridge was never touched — see `TerminalTabBar.spec.tsx`.
+ * assert the bridge was never touched.
  */
-export const useTerminalTabs = ({
+export const useTerminalSessions = ({
   confirmBeforeClosingRunningTerminal = true
-}: TerminalTabsOptions = {}): TerminalTabsController => {
+}: TerminalSessionsOptions = {}): TerminalSessionsController => {
   const [lastError, setLastError] = useState<IpcError | null>(null)
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null)
   const [isOpening, setIsOpening] = useState(false)

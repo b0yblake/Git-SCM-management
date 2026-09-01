@@ -2146,3 +2146,31 @@ Optional Feature Metadata
 ```
 
 Keep this abstraction intact as the project grows.
+
+---
+
+# 37. Approved Post-v0.1 Upgrade — Phase 13 Terminal Mosaic
+
+Phase 13 supersedes the horizontal-tab presentation described in Sections 15–17
+without changing the terminal engine, IPC surface, or workspace definition model.
+Its implementation contract is
+[`plans/phase-13-terminal-mosaic.md`](plans/phase-13-terminal-mosaic.md).
+
+The renderer terminal state now distinguishes running sessions, visible sessions,
+and the focused session. Grid is the default canvas and may show four terminals;
+Focus, Columns, and Main + Side are alternate presets. Sessions outside the canvas
+remain mounted, continue receiving output, and are selected from a searchable
+Terminal Navigator.
+
+The approved shell is:
+
+```text
+Activity Rail
+  ├── Terminal Navigator / Workspace drawer / Settings drawer
+  └── Terminal Canvas
+        ├── Layout toolbar
+        └── Focus | Columns | Main + Side | Grid
+```
+
+This is a renderer-only layout upgrade. Persistent layout trees, drag-and-drop,
+and workspace-schema migration remain deferred until separately approved.

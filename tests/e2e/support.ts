@@ -44,7 +44,7 @@ export const launchPackaged = async (userDataDir?: string): Promise<LaunchedApp>
   })
 
   const page = await app.firstWindow()
-  await page.waitForSelector('.workspace-sidebar', { timeout: 30_000 })
+  await page.waitForSelector('.terminal-navigator', { timeout: 30_000 })
 
   return {
     app,
@@ -67,9 +67,9 @@ export const launchPackaged = async (userDataDir?: string): Promise<LaunchedApp>
 /** The visible terminal's rendered rows. */
 export const activeScreen = (page: Page): Promise<string> =>
   page
-    .locator('.terminal-tabs__panel:not([hidden]) .xterm-rows')
+    .locator('.terminal-pane--active .xterm-rows')
     .innerText()
     .catch(() => '')
 
-export const tabTitles = (page: Page): Promise<string[]> =>
-  page.locator('.terminal-tab__label').allInnerTexts()
+export const sessionTitles = (page: Page): Promise<string[]> =>
+  page.locator('.terminal-session-item__copy strong').allInnerTexts()

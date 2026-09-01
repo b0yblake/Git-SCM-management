@@ -22,8 +22,20 @@ beforeEach(() => {
   git('config', 'user.name', 'Test')
 })
 
-afterEach(() => {
-  rmSync(directory, { recursive: true, force: true })
+afterEach(async () => {
+  // Windows can release the killed git process' working-directory handle a
+  // fraction after the timeout callback. `rmSync`'s built-in retry does not
+  // cover this root-directory EBUSY, so retry it explicitly.
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      rmSync(directory, { recursive: true, force: true })
+      return
+    } catch (error) {
+      const isBusy = (error as NodeJS.ErrnoException).code === 'EBUSY'
+      if (!isBusy || attempt === 19) throw error
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+  }
 })
 
 describe('against a real repository', () => {
