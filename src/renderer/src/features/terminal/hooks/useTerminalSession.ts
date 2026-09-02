@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MAX_TERMINAL_DIMENSION } from '@shared/contracts/ipc'
+import { onSessionData, onSessionExit } from '../model/sessionEventHub'
 
 export type TerminalViewStatus = 'running' | 'exited'
 
@@ -68,15 +69,16 @@ export const useTerminalSession = ({
     statusRef.current = 'running'
     lastSizeRef.current = null
 
-    const offData = window.gitdeck.terminal.onData((event) => {
-      if (event.sessionId !== sessionId) return
-      onOutputRef.current(event.data)
+    // Through the shared hub, not the bridge directly: one bridge listener
+    // serves every terminal, so per-chunk dispatch cost does not grow with
+    // the number of open sessions.
+    const offData = onSessionData(sessionId, (data) => {
+      onOutputRef.current(data)
     })
 
-    const offExit = window.gitdeck.terminal.onExit((event) => {
-      if (event.sessionId !== sessionId) return
+    const offExit = onSessionExit(sessionId, (exitCode) => {
       statusRef.current = 'exited'
-      setState({ sessionId, status: 'exited', exitCode: event.exitCode })
+      setState({ sessionId, status: 'exited', exitCode })
     })
 
     return () => {

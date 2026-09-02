@@ -36,6 +36,15 @@ const THEME = {
 } as const
 
 /**
+ * Scrollback is the dominant renderer memory cost, and every session keeps
+ * its xterm alive even while parked — so it scales with terminal count, not
+ * visible panes. At ~13 bytes per cell a full 200-column buffer costs
+ * ~2.6MB per 1000 lines per terminal; the previous 5000 put a ten-terminal
+ * workspace at ~130MB of scrollback alone. 1000 is xterm's own default.
+ */
+const TERMINAL_SCROLLBACK_LINES = 1000
+
+/**
  * Renders one live terminal.
  *
  * The xterm instance lives in a ref, never in state or a store: it is not
@@ -83,7 +92,7 @@ export const TerminalView = ({
       cursorBlink,
       fontFamily: 'Cascadia Mono, Consolas, Menlo, monospace',
       fontSize,
-      scrollback: 5000,
+      scrollback: TERMINAL_SCROLLBACK_LINES,
       theme: THEME
     })
     const fitAddon = new FitAddon()
