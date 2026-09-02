@@ -11,7 +11,7 @@ several shells at once — dev server, build watcher, git, logs — and are tire
 of hunting for them in a crowded tab bar.
 
 [![Platform](https://img.shields.io/badge/Windows-10%2F11%20x64-0078D6)](https://github.com/b0yblake/Git-SCM-management/releases)
-![Version](https://img.shields.io/badge/version-0.2.0-blue)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
 ![Local first](https://img.shields.io/badge/local--first-no%20telemetry-2EA44F)
 
 ![GitDeck Terminal Mosaic](docs/assets/gitdeck-mosaic.png)
