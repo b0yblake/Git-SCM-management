@@ -48,17 +48,31 @@ describe('the IPC surface', () => {
         check: 'updates:check',
         release: 'updates:release',
         available: 'updates:available'
+      },
+      // Phase 17 — deliberate addition. The data-folder picker is native and
+      // Main-owned; no channel accepts a filesystem path.
+      storage: {
+        info: 'storage:info',
+        choose: 'storage:choose'
       }
     })
   })
 
-  it('holds six namespaces and twenty channels', () => {
+  it('holds seven namespaces and twenty-two channels', () => {
     // A count is a second, blunter guard: renaming a channel keeps the count,
     // but adding one cannot.
     const namespaces = Object.keys(IPC)
     const channels = Object.values(IPC).flatMap((namespace) => Object.values(namespace))
 
-    expect(namespaces).toEqual(['terminal', 'settings', 'workspace', 'git', 'ports', 'updates'])
-    expect(channels).toHaveLength(20)
+    expect(namespaces).toEqual([
+      'terminal',
+      'settings',
+      'workspace',
+      'git',
+      'ports',
+      'updates',
+      'storage'
+    ])
+    expect(channels).toHaveLength(22)
   })
 })

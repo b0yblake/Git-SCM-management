@@ -66,6 +66,11 @@ describe('channel registry', () => {
     expect(Object.keys(IPC.updates).sort()).toEqual(['available', 'check', 'release'])
   })
 
+  it('the storage namespace holds exactly info and choose', () => {
+    // `choose` opens the native picker; a path can never arrive over IPC.
+    expect(Object.keys(IPC.storage).sort()).toEqual(['choose', 'info'])
+  })
+
   it('every terminal channel is prefixed with its namespace', () => {
     for (const channel of Object.values(IPC.terminal)) {
       expect(channel.startsWith('terminal:')).toBe(true)
@@ -77,7 +82,7 @@ describe('channel registry', () => {
    * directly into a handler or a preload call would silently bypass it.
    */
   it('no raw channel literal exists outside the registry', () => {
-    const literal = /['"`](terminal|settings|workspace|git|ports|updates):[a-z]+['"`]/
+    const literal = /['"`](terminal|settings|workspace|git|ports|updates|storage):[a-z]+['"`]/
 
     const offenders = sourceFiles(SRC)
       .filter((path) => path !== REGISTRY && path !== THIS_FILE && path !== SNAPSHOT)

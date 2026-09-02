@@ -473,12 +473,16 @@ nowhere else. Features receive their paths from the composition root and no
 longer know their own filenames.
 
 ```text
-%APPDATA%\GitDeck\                     app.getPath('userData')
+<data root>\                           default: app.getPath('userData');
+│                                      user-relocatable via Settings (Phase 17)
 ├── settings.json                      settings store   (schema v1)
 ├── storage.json                       manifest — bootstrap-owned bookkeeping
 ├── workspaces\<workspace-id>.json     one file per workspace (schema v1)
 ├── backups\                           pre-migration copies (Phase 15)
 └── *.corrupt-<timestamp>              quarantined unreadable files
+
+%APPDATA%\GitDeck\data-root.json       pointer to the chosen data root —
+                                       ALWAYS in the default userData dir
 
 %LOCALAPPDATA%\GitDeck\logs\           app.getPath('logs')
 └── gitdeck.log                        rotating operational log
@@ -500,6 +504,14 @@ Rules:
    sees it, unknown fields are carried through a rewrite untouched.
 4. Terminal input/output is never persisted. The uninstaller never deletes
    `userData`; removal is a manual `%APPDATA%\GitDeck` deletion.
+5. **Data root resolution (Phase 17).** The pointer cannot live in
+   `settings.json` — the app must know the folder before settings can be
+   read. Resolution is tolerant: missing pointer → default; corrupt →
+   quarantined, default; folder unreachable → default for this run, pointer
+   kept. Switching copies current data to the target (unless the target
+   already holds GitDeck data, which is adopted as-is), never deletes the
+   source, and takes effect on the next launch. The folder picker is native
+   and Main-owned: no IPC channel accepts a filesystem path.
 
 ### Compatibility policy (Phase 15)
 

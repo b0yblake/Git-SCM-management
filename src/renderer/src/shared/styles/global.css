@@ -475,6 +475,51 @@ button {
   margin-top: var(--space-3);
 }
 
+/* Data folder (Phase 17) — path display plus the native-picker trigger. */
+.data-folder {
+  margin-top: var(--space-3);
+}
+
+.data-folder > label {
+  color: var(--text-muted);
+  font-size: var(--font-small);
+}
+
+.data-folder__row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.data-folder__path {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-family: Consolas, monospace;
+  font-size: var(--font-tiny);
+}
+
+.data-folder__hint {
+  margin: var(--space-1) 0 0;
+  color: var(--text-faint);
+  font-size: var(--font-tiny);
+}
+
+.data-folder__pending {
+  margin: var(--space-2) 0 0;
+  color: var(--warning);
+  font-size: var(--font-small);
+}
+
+.data-folder__pending code {
+  font-family: Consolas, monospace;
+  word-break: break-all;
+}
+
 .update-check__result {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);

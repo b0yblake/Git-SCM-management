@@ -11,6 +11,7 @@ import type {
   TerminatePortProcessesRequest,
   TerminatePortProcessesResult
 } from '@shared/contracts/ports'
+import type { DataFolderInfo } from '@shared/contracts/storage'
 import type { UpdateCheckResult } from '@shared/contracts/updates'
 import type { Workspace, WorkspaceInput, WorkspaceSummary } from '@shared/contracts/workspace'
 
@@ -20,6 +21,7 @@ type WorkspaceApi = Window['gitdeck']['workspace']
 type GitApi = Window['gitdeck']['git']
 type PortsApi = Window['gitdeck']['ports']
 type UpdatesApi = Window['gitdeck']['updates']
+type StorageApi = Window['gitdeck']['storage']
 
 /** What the fake detector "found". Deliberately not all five. */
 export const FAKE_PROFILES: AvailableShellProfile[] = [
@@ -42,6 +44,7 @@ export interface FakeGitDeckApi {
   readonly git: GitApi
   readonly ports: PortsApi
   readonly updates: UpdatesApi
+  readonly storage: StorageApi
   readonly calls: {
     create: unknown[]
     profiles: number
@@ -58,6 +61,8 @@ export interface FakeGitDeckApi {
     portsTerminate: TerminatePortProcessesRequest[]
     updatesCheck: number
     updatesOpenRelease: number
+    storageDataFolder: number
+    storageChooseDataFolder: number
   }
   /** What the fake has persisted — survives an `install()`/`uninstall()` cycle. */
   storedSettings(): AppSettings
@@ -83,6 +88,12 @@ export interface FakeGitDeckApi {
   setUpdateCheckResult(result: UpdateCheckResult): void
   /** Fires the startup update-available push. */
   emitUpdateAvailable(result: UpdateCheckResult): void
+  /** What `storage.dataFolder` answers. */
+  setDataFolderInfo(info: DataFolderInfo): void
+  /** What the next `storage.chooseDataFolder` answers; null = cancelled. */
+  setChooseDataFolderResult(result: DataFolderInfo | null): void
+  /** Makes `storage.chooseDataFolder` answer with an error. */
+  failChooseDataFolder(message: string): void
   /**
    * Simulates Main falling back when a saved directory is gone: a create for
    * this path succeeds, but comes back seated in `FAKE_FALLBACK_CWD`.
@@ -122,7 +133,9 @@ export const emptyCalls = (): FakeGitDeckApi['calls'] => ({
   portsList: 0,
   portsTerminate: [],
   updatesCheck: 0,
-  updatesOpenRelease: 0
+  updatesOpenRelease: 0,
+  storageDataFolder: 0,
+  storageChooseDataFolder: 0
 })
 
 export const createFakeGitDeckApi = (): FakeGitDeckApi => {
@@ -151,6 +164,14 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     currentVersion: '0.1.0',
     latest: null
   }
+  let dataFolderInfo: DataFolderInfo = {
+    current: 'C:\\fake\\GitDeck',
+    defaultRoot: 'C:\\fake\\GitDeck',
+    isCustom: false,
+    pending: null
+  }
+  let chooseDataFolderResult: DataFolderInfo | null = null
+  let chooseDataFolderError: IpcError | null = null
 
   const terminal: TerminalApi = {
     create: (request) => {
@@ -354,6 +375,21 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     }
   }
 
+  const storageApi: StorageApi = {
+    dataFolder: () => {
+      calls.storageDataFolder += 1
+      return Promise.resolve({ ok: true as const, value: dataFolderInfo })
+    },
+    chooseDataFolder: () => {
+      calls.storageChooseDataFolder += 1
+      if (chooseDataFolderError) {
+        return Promise.resolve({ ok: false as const, error: chooseDataFolderError })
+      }
+      if (chooseDataFolderResult) dataFolderInfo = chooseDataFolderResult
+      return Promise.resolve({ ok: true as const, value: chooseDataFolderResult })
+    }
+  }
+
   return {
     terminal,
     settings: settingsApi,
@@ -361,6 +397,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     git: gitApi,
     ports: portsApi,
     updates: updatesApi,
+    storage: storageApi,
     calls,
     storedSettings: () => settings,
     storedWorkspaces: () => [...workspaces.values()],
@@ -397,6 +434,16 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     emitUpdateAvailable: (result) => {
       for (const listener of [...updateAvailableListeners]) listener(result)
     },
+    setDataFolderInfo: (info) => {
+      dataFolderInfo = info
+    },
+    setChooseDataFolderResult: (result) => {
+      chooseDataFolderError = null
+      chooseDataFolderResult = result
+    },
+    failChooseDataFolder: (message) => {
+      chooseDataFolderError = { code: 'INTERNAL_ERROR', message }
+    },
     markDirectoryMissing: (path) => {
       missingDirectories.add(path)
     },
@@ -419,7 +466,8 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
           git: gitApi,
           settings: settingsApi,
           ports: portsApi,
-          updates: updatesApi
+          updates: updatesApi,
+          storage: storageApi
         },
         configurable: true,
         writable: true

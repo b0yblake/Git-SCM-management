@@ -8,6 +8,7 @@ import type {
   TerminatePortProcessesRequest,
   TerminatePortProcessesResult
 } from '@shared/contracts/ports'
+import type { DataFolderInfo } from '@shared/contracts/storage'
 import type { UpdateCheckResult } from '@shared/contracts/updates'
 import type { Workspace, WorkspaceInput, WorkspaceSummary } from '@shared/contracts/workspace'
 import type {
@@ -32,6 +33,7 @@ export interface GitDeckApi {
   readonly settings: SettingsApi
   readonly ports: PortsApi
   readonly updates: UpdatesApi
+  readonly storage: StorageApi
 }
 
 /**
@@ -112,4 +114,15 @@ export interface UpdatesApi {
   check(): Promise<Result<UpdateCheckResult, IpcError>>
   openRelease(): Promise<Result<null, IpcError>>
   onAvailable(callback: (result: UpdateCheckResult) => void): Unsubscribe
+}
+
+/**
+ * Where GitDeck's data lives (Phase 17). `chooseDataFolder` asks Main to show
+ * the native folder picker and resolves with the new state, or null on
+ * cancel. Neither member carries a payload: a filesystem path can never
+ * travel renderer → Main, and a switch takes effect on the next launch.
+ */
+export interface StorageApi {
+  dataFolder(): Promise<Result<DataFolderInfo, IpcError>>
+  chooseDataFolder(): Promise<Result<DataFolderInfo | null, IpcError>>
 }

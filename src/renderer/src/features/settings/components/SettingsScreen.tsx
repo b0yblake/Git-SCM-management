@@ -14,6 +14,9 @@ export interface SettingsScreenProps {
   /** Detected by Main; the renderer never decides which shells exist. */
   readonly profiles: readonly AvailableShellProfile[]
   readonly onChange: (patch: AppSettingsPatch) => void
+  /** Extra sections the panel slots in (updates, data folder) — rendered
+   * last, inside the same styled surface, without this screen knowing them. */
+  readonly children?: React.ReactNode
 }
 
 /**
@@ -26,7 +29,8 @@ export interface SettingsScreenProps {
 export const SettingsScreen = ({
   settings,
   profiles,
-  onChange
+  onChange,
+  children
 }: SettingsScreenProps): React.JSX.Element => {
   const id = useId()
   // The input holds text while it is being typed: "1" on the way to "16" is not
@@ -120,6 +124,8 @@ export const SettingsScreen = ({
         />
         Check for new versions at startup
       </label>
+
+      {children}
     </section>
   )
 }

@@ -45,6 +45,13 @@ export const IPC = {
     release: 'updates:release',
     /** One-way Main → renderer: the startup check found a newer version. */
     available: 'updates:available'
+  },
+
+  storage: {
+    /** Where data lives now, the default, and any pending switch. */
+    info: 'storage:info',
+    /** Opens the native folder picker — no path ever crosses this channel. */
+    choose: 'storage:choose'
   }
 } as const
 

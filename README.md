@@ -141,7 +141,9 @@ Build a local installer with `npm run package` — it is written to
   application-data directories. Terminal input and output are not logged.
 - **Uninstall keeps your data.** Removing GitDeck leaves settings and
   workspaces in `%APPDATA%\GitDeck` so a reinstall finds them; delete that
-  folder yourself to remove every trace.
+  folder yourself to remove every trace. The data folder itself is
+  relocatable from Settings — switching copies your data to the chosen
+  folder on the next start and never deletes the old one.
 - **Update check, disclosed.** At startup — at most once a day — GitDeck makes
   one anonymous HTTPS request to the GitHub Releases API to learn whether a
   newer version exists. Nothing is downloaded or installed; no account, token,
