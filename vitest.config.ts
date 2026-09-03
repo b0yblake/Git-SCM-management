@@ -25,6 +25,7 @@ export default defineConfig({
       {
         plugins: [react()],
         resolve: { alias },
+        define: { __APP_VERSION__: JSON.stringify('0.0.0-test') },
         test: {
           name: 'renderer',
           environment: 'jsdom',

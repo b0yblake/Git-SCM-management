@@ -44,6 +44,9 @@ export const App = (): React.JSX.Element => {
       <ToastHost />
       <PortsModalHost />
       <UpdateBanner />
+      {/* App-owned, overlaying the status bar's right end: the git feature
+          stays deletable without taking the version display with it. */}
+      <span className="app-version">v{__APP_VERSION__}</span>
     </div>
   )
 }

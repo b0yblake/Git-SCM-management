@@ -535,6 +535,21 @@ button {
   cursor: pointer;
 }
 
+/* The running version, pinned to the footer's right end (App-owned). */
+.app-version {
+  position: fixed;
+  right: 0.75rem;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.15rem 0;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
 .context-menu-backdrop {
   position: fixed;
   inset: 0;
