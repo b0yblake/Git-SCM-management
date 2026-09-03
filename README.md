@@ -1,154 +1,286 @@
 <div align="center">
 
-<img src="build/icon.png" width="88" alt="GitDeck logo" />
+<img src="build/icon.png" width="96" alt="GitDeck logo" />
 
 # GitDeck
 
-**See every shell. Lose none.**
+**All your Windows terminals, visible and ready.**
 
-A local-first terminal workspace manager for Windows developers who run
-several shells at once — dev server, build watcher, git, logs — and are tired
-of hunting for them in a crowded tab bar.
+Run Git Bash, PowerShell, Command Prompt, and WSL side by side. Park a session
+without stopping it, then save the whole setup as a workspace you can reopen
+in one click.
 
-[![Platform](https://img.shields.io/badge/Windows-10%2F11%20x64-0078D6)](https://github.com/b0yblake/Git-SCM-management/releases)
-![Version](https://img.shields.io/badge/version-0.5.0-blue)
-![Local first](https://img.shields.io/badge/local--first-no%20telemetry-2EA44F)
+<!-- Keep the release tag, app version, asset name, and hashes in sync. -->
+<a href="https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.exe">
+  <img src="https://img.shields.io/badge/Download-GitDeck%200.5.0%20for%20Windows-1677FF?style=for-the-badge&logo=windows11&logoColor=white" alt="Download GitDeck 0.5.0 for Windows x64" />
+</a>
 
-![GitDeck Terminal Mosaic](docs/assets/gitdeck-mosaic.png)
+<br />
+
+[Release page](https://github.com/b0yblake/Git-SCM-management/releases/tag/v0.5)
+· [Quick start](#quick-start)
+· [Features](#core-features)
+· [Privacy](#privacy-and-safety)
+· [Build from source](#build-from-source)
+
+![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%2F11%20x64-0078D6)
+![Local first](https://img.shields.io/badge/local--first-no%20account-2EA44F)
+![No telemetry](https://img.shields.io/badge/telemetry-none-2EA44F)
+![Version](https://img.shields.io/badge/version-0.5.0-555555)
+
+<img src="docs/assets/gitdeck-mosaic.png" alt="GitDeck showing three live terminal sessions in the Grid layout" />
+
+<sub>The Terminal Mosaic keeps live shells on one canvas, with every session one click away in the Navigator.</sub>
 
 </div>
 
 ## Why GitDeck?
 
-Tab bars hide your terminals. GitDeck deals them onto a table instead:
+Terminal tabs work until a project needs an API server, frontend watcher,
+test runner, logs, and a scratch shell at the same time. GitDeck turns that
+pile of tabs into a reusable visual workspace.
 
-1. **Mosaic** — a live canvas that keeps every terminal visible at once.
-2. **Navigator** — a searchable list of every session, visible or parked.
-3. **Workspaces** — saved terminal setups you can reopen with one click.
+| What you need | What GitDeck gives you |
+| --- | --- |
+| See what is running | Focus, Columns, Main + Side, and an elastic Grid that keeps every unparked session on one page. |
+| Clear space without losing work | Park a terminal to hide it from the canvas while its process and scrollback keep running. |
+| Recreate a project setup | Save terminal names, shells, folders, and optional startup commands as a workspace. |
+| Start work from Windows | Open a folder from Explorer or create a desktop shortcut for a saved workspace. |
+| Keep local work local | No account, cloud sync, analytics, or telemetry. The Git status UI exposes no write actions. |
 
-Every terminal is a real operating-system shell — Git Bash, PowerShell,
-Command Prompt, or WSL — not an emulation.
+GitDeck is a **terminal workspace manager**, not a Git client. Its built-in Git
+integration only invokes status commands and exposes no commit, push, pull,
+merge, reset, or checkout action. Commands you type inside a shell still behave
+normally and can, of course, change a repository.
 
----
+## Install GitDeck
 
-## 🖥️ Terminal Mosaic
+> [!NOTE]
+> GitDeck requires **Windows 10 or 11 on x64**. A normal installation does not
+> require Node.js or Git. Windows PowerShell and Command Prompt are built in;
+> Git Bash, PowerShell 7, and WSL appear when they are installed on your PC.
 
-Choose how many shells share the canvas. Switch layouts any time; sessions
-keep running no matter where they sit.
+### Recommended: EXE installer
 
-| Layout               | Visible panes | Shape                                                                     |
-| -------------------- | :-----------: | ------------------------------------------------------------------------- |
-| **Focus**            |       1       | One terminal fills the canvas                                             |
-| **Columns**          |       2       | Two equal vertical panes                                                  |
-| **Main + Side**      |       3       | Large pane left, two stacked panes right                                  |
-| **Grid** _(default)_ |   unlimited   | Elastic mosaic — the lattice re-balances so every terminal stays on one page |
+1. [Download `GitDeck-Setup-0.5.0-x64.exe`](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.exe).
+2. Open the downloaded file. Keep the default
+   `%LOCALAPPDATA%\Programs\GitDeck` folder or choose another location.
+3. Launch **GitDeck** from the Start menu or desktop shortcut.
 
-**Park, don't kill.** Remove a terminal from the canvas without stopping it.
-A parked shell keeps running in the background with its output and scrollback
-preserved — bring it back exactly where it left off. Closing a terminal is the
-only action that ends its shell.
+> [!WARNING]
+> GitDeck is not currently code-signed, so Microsoft Defender SmartScreen may
+> show a warning. Confirm that the download came from this repository, select
+> **More info**, then **Run anyway**. See [Verify the download](#verify-the-download)
+> if you want to check the file before opening it.
 
-## 🧭 Session Navigator
+<details>
+<summary><strong>Managed or silent installation with MSI</strong></summary>
 
-The Navigator lists every session — on the canvas or parked — with its shell,
-working directory, and a live status dot. Type to search when the list grows;
-click to focus. `Ctrl+Tab` cycles through sessions without touching the mouse.
+Download
+[`GitDeck-Setup-0.5.0-x64.msi`](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.msi),
+then run:
 
-## 🐚 Real shells, auto-detected
+```powershell
+msiexec /i .\GitDeck-Setup-0.5.0-x64.msi /qn
+```
 
-GitDeck detects what's installed and offers it in the **New Terminal** menu:
+The MSI wraps the same per-user installer as the EXE. Uninstall GitDeck from
+**Settings → Apps → Installed apps**; the wrapper is intended for deployment,
+not `msiexec /x` inventory.
 
-- **Git Bash** (requires [Git for Windows](https://git-scm.com/download/win))
-- **PowerShell**
-- **Command Prompt**
-- **WSL**
+</details>
 
-Each session is a real shell process owned by GitDeck. Close GitDeck and it
-cleanly stops the processes it owns — nothing lingers.
+### Verify the download
 
-## 💾 Workspaces
+<details>
+<summary><strong>Show SHA-256 verification steps</strong></summary>
 
-A workspace is a **blueprint, not a snapshot**. It saves what each terminal
-_is_, then recreates it fresh on demand:
+PowerShell can calculate the SHA-256 digest without installing another tool:
+
+```powershell
+(Get-FileHash .\GitDeck-Setup-0.5.0-x64.exe -Algorithm SHA256).Hash.ToLower()
+```
+
+Compare the result with the digest published by GitHub for the v0.5 assets:
+
+| File | Expected SHA-256 |
+| --- | --- |
+| `GitDeck-Setup-0.5.0-x64.exe` | `691b7fdc672bea5bf77ff2bfb8aea886a6fdcb9b91867949416277d1741f35fd` |
+| `GitDeck-Setup-0.5.0-x64.msi` | `86d674c0a9b31477a52d654f35e41d53b3ed52fe44a80d0b68517ea87c9283ef` |
+
+If the values differ, do not run the installer. Delete it and download a new
+copy from the [official release page](https://github.com/b0yblake/Git-SCM-management/releases/tag/v0.5).
+
+</details>
+
+## Quick start
+
+You can build a useful workspace in about a minute:
+
+1. Select **New Terminal** or press `Ctrl+T` to open the default shell.
+2. Use the arrow beside **New Terminal** to choose another detected shell. Your
+   choice becomes the new default.
+3. Pick **Focus**, **Columns**, **Main + Side**, or **Grid** above the canvas.
+4. Use the pane controls to rename, duplicate, focus, park, or close a terminal.
+5. Open **Workspaces → New workspace**. Give each terminal a name, working
+   directory, shell, and optional startup command, then select **Save workspace**.
+
+A typical full-stack workspace might look like this:
 
 ```text
-📄 Workspace "web-app"
-├─ 1. API server   Git Bash    C:\work\api    npm run dev
-├─ 2. Frontend     Git Bash    C:\work\web    npm run dev
-└─ 3. Scratch      PowerShell  C:\work
+Workspace: web-app
+├─ API       Git Bash           C:\dev\web-app\api       npm run dev
+├─ Web       PowerShell 7       C:\dev\web-app\web       npm run dev
+├─ Tests     Command Prompt     C:\dev\web-app           npm test -- --watch
+└─ Scratch   Windows PowerShell C:\dev\web-app
 ```
 
-For each terminal a workspace stores four things: **name**, **shell**,
-**directory**, and an optional **startup command**.
+Opening that workspace reuses matching sessions that are already running and
+creates any that are missing in the right folders. Saved startup commands run
+for newly created sessions. Live processes and terminal output are never
+serialized.
 
-- **Open a workspace** → fresh shells spawn in the right folders and startup
-  commands run.
-- **Relaunch GitDeck** → with restore enabled, your last workspace comes back,
-  including which tab was active. Startup commands do **not** rerun on restore
-  unless you explicitly opt in — a restart never surprises you with a rebuild.
-- Live processes are never persisted; restore recreates definitions only.
+## Core features
 
-## 🔎 Also on deck
+### Terminal Mosaic
 
-|                           |                                                                                                                                                                                                                                              |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Git status, read-only** | The focused terminal shows its repo's branch and working-tree status. GitDeck can _see_ your repo but can never commit, push, pull, merge, or reset it.                                                                                       |
-| **Port inspector**        | See which local ports are listening and which process owns them. Terminating a process is explicit: GitDeck shows every affected binding, asks for confirmation, revalidates the target, and protects system processes and itself.            |
+Switch layouts at any time without restarting a shell:
 
-## ⌨️ Shortcuts
+| Layout | Visible sessions | Best for |
+| --- | :---: | --- |
+| **Focus** | 1 | Concentrating on one terminal. Select the focus control again to restore the previous layout. |
+| **Columns** | 2 | Comparing two processes side by side. |
+| **Main + Side** | 3 | One primary shell with two supporting panes. |
+| **Grid** *(default)* | All unparked sessions | Keeping the whole project in view; the grid rebalances as terminals are added or the window is resized. |
 
-| Shortcut          | Action                     |
-| ----------------- | -------------------------- |
-| `Ctrl+T`          | New terminal               |
-| `Ctrl+W`          | Close the focused terminal |
-| `Ctrl+Tab`        | Next session               |
-| `Ctrl+Shift+Tab`  | Previous session           |
+Once a session is visible, the **Add new Terminal** tile stays at the end of
+Grid and appears in any unfilled fixed layout. It opens a fresh default
+terminal rather than copying the selected pane.
 
----
+> **Park is not close.** Parking removes a pane from the canvas but keeps the
+> shell alive. Closing a pane ends its shell process and asks for confirmation
+> by default.
 
-## 🚀 Install
+### Session Navigator
 
-GitDeck targets **Windows 10/11 x64**. Every release carries two installers.
-They install the same application, so take whichever suits you:
+The Navigator lists every running session, including parked ones. Search by
+terminal name, shell, or directory; select a result to bring it back to the
+canvas. `Ctrl+Tab` and `Ctrl+Shift+Tab` move through sessions without the mouse.
 
-| File                              | Use it for                                                                             |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| `GitDeck-Setup-<version>-x64.exe` | A normal install. Run it, pick a folder, done.                                           |
-| `GitDeck-Setup-<version>-x64.msi` | Scripted or managed rollout: `msiexec /i GitDeck-Setup-<version>-x64.msi /qn`             |
+### Reusable workspaces
 
-Download from
-[GitHub Releases](https://github.com/b0yblake/Git-SCM-management/releases),
-run it, then launch GitDeck from the Start menu or desktop shortcut.
+A workspace is a blueprint, not a snapshot. It stores:
 
-Both install for the current user into `%LOCALAPPDATA%\Programs\GitDeck` and
-leave a single entry in **Installed apps**. The MSI wraps the same installer,
-so uninstall always goes through that entry — never `msiexec /x`.
+- the workspace and terminal names;
+- each working directory and shell profile;
+- an optional startup command for each terminal;
+- the terminal that should be active.
 
-> **Unsigned build:** Windows SmartScreen may warn. Verify the installer came
-> from this repository, then choose **More info → Run anyway**. If Releases
-> contains no installer yet, use the source workflow below.
+Opening a workspace is an explicit request to start its commands. Restoring the
+last workspace after relaunch recreates its terminals, but startup commands do
+not rerun unless you enable that option in Settings.
 
-### Verify a download
+### Windows shortcuts
 
-Every release carries `GitDeck-<version>-checksums.txt`. Compare it with what
-you downloaded:
+- **Open a folder:** after GitDeck has been launched once from an installed
+  build, hold `Shift` and right-click a folder or the background inside it,
+  then choose **Open in GitDeck**.
+- **Create a workspace shortcut:** right-click a saved workspace in GitDeck,
+  choose **Create shortcut…**, and save the `.lnk` wherever it is useful.
+- Both actions reuse a running GitDeck window. Opening the same folder again
+  focuses its existing terminal instead of creating a duplicate.
 
-```powershell
-Get-FileHash .\GitDeck-Setup-<version>-x64.exe -Algorithm SHA256
-```
+### Git status and local ports
 
-With the [GitHub CLI](https://cli.github.com) you can check the release's
-signed attestation instead, which also proves the file came from this
-repository's release workflow rather than from someone reusing the name:
+- The focused terminal shows its repository branch and working-tree status.
+  The built-in UI exposes no Git write action.
+- **File → Port…** lists TCP listeners, bound UDP endpoints, and their owning
+  processes. Termination is selected explicitly, confirmed, and revalidated.
+  GitDeck refuses its own process, Windows PIDs 0 and 4, cross-session targets,
+  and any target whose identity it cannot verify.
 
-```powershell
-gh release verify v<version> -R b0yblake/Git-SCM-management
-gh release verify-asset v<version> .\GitDeck-Setup-<version>-x64.exe -R b0yblake/Git-SCM-management
-```
+## Supported shells
 
-### Run from source
+GitDeck detects known shells from their standard Windows locations and only
+shows profiles that are available.
 
-Requires Git and **Node.js 22.22.2 or newer**.
+| Shell | Availability |
+| --- | --- |
+| **Windows PowerShell** | Included with Windows. |
+| **Command Prompt** | Included with Windows. |
+| **Git Bash** | Install [Git for Windows](https://git-scm.com/download/win). |
+| **PowerShell 7** | Install PowerShell 7 for a modern `pwsh` profile. |
+| **WSL** | Enable Windows Subsystem for Linux and install a distribution. |
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+T` | Open a new terminal with the default shell. |
+| `Ctrl+W` | Close the focused terminal. |
+| `Ctrl+Tab` | Move to the next session. |
+| `Ctrl+Shift+Tab` | Move to the previous session. |
+
+## Privacy and safety
+
+- **No account or telemetry.** Settings, workspaces, and operational logs stay
+  on your PC. Terminal input and output are not logged.
+- **Your data survives uninstall.** By default it remains under
+  `%APPDATA%\GitDeck`, so reinstalling can find it. To remove saved data, delete
+  that folder and any custom data folder you selected; workspace `.lnk` files
+  you created are separate and can be deleted like normal shortcuts.
+- **The data folder is movable.** Choose another folder in Settings. GitDeck
+  copies or adopts the selected data immediately, uses it from the next launch,
+  and does not delete the old copy. Operational logs remain in the default app
+  data folder.
+- **Update checks are transparent.** When enabled, GitDeck makes at most one
+  unauthenticated HTTPS metadata request per day to the GitHub Releases API.
+  It sends a `GitDeck` user-agent but no account, token, or app-generated device
+  identifier, and never downloads or installs an update automatically. You can
+  turn the check off in Settings.
+- **App exit is explicit.** Closing GitDeck cleanly stops shell processes it
+  owns. Workspaces restore terminal definitions, not running processes.
+
+## Frequently asked questions
+
+<details>
+<summary><strong>Does parking a terminal stop my process?</strong></summary>
+
+No. Parking only hides the terminal from the canvas. Its process, output, and
+scrollback remain available from the Navigator. Closing the terminal is what
+stops the process.
+
+</details>
+
+<details>
+<summary><strong>Will my processes continue after GitDeck exits?</strong></summary>
+
+No. GitDeck shuts down the processes it owns. A saved workspace can recreate
+the terminals later, but it does not preserve process memory or terminal output.
+
+</details>
+
+<details>
+<summary><strong>Can GitDeck change my Git repository?</strong></summary>
+
+The built-in integration only invokes status commands and offers no Git write
+actions. Commands entered in a terminal remain unrestricted, just as they are
+in any other shell.
+
+</details>
+
+<details>
+<summary><strong>Why is a shell missing from the New Terminal menu?</strong></summary>
+
+GitDeck only lists shells it detects in standard install locations. Install the
+shell, restart GitDeck, and check the menu again. Windows PowerShell and Command
+Prompt should already be present on supported Windows versions.
+
+</details>
+
+## Build from source
+
+Source development requires **Git** and **Node.js 22.22.2 or newer**:
 
 ```powershell
 git clone https://github.com/b0yblake/Git-SCM-management.git
@@ -157,60 +289,35 @@ npm ci
 npm run dev
 ```
 
-Build the installers with `npm run package` — `release/` then holds the EXE,
-the MSI and the checksums file, exactly the three assets a release carries.
-Before opening a pull request, run `npm run ci` and `npm run build`.
+Useful project commands:
 
-### Cutting a release
+| Command | Purpose |
+| --- | --- |
+| `npm run ci` | Run type checking, lint, and the complete Vitest suite. |
+| `npm run build` | Create the production Electron bundles. |
+| `npm run package` | Build the Windows EXE, MSI, and local checksums file. |
+| `npm run test:e2e` | Exercise the packaged application with Playwright. |
+| `npm run verify:release` | Run the full release verification sequence. |
 
-Releases are built and published by GitHub Actions. Nothing is uploaded by
-hand.
+Architecture decisions, test contracts, and implementation history live in
+[`plans/`](plans/). The release automation is documented in
+[`plans/phase-22-release-packaging.md`](plans/phase-22-release-packaging.md).
 
-1. Bump `version` in `package.json` and the version badge above.
-2. Append `tests/fixtures/storage/vX.Y.Z/` — the settings, manifest and
-   workspace files this version writes — and add the version to
-   `PUBLISHED_RELEASES` in `storageCompat.integration.spec.ts`. That suite is
-   the proof that a future GitDeck still reads today's data, and it can only
-   prove it for releases it has a fixture for. Commit.
-3. `git tag vX.Y.Z && git push origin main vX.Y.Z`
-4. Watch the **Release** workflow.
+## Support, security, and license
 
-The workflow refuses to publish if the tag and `package.json` disagree, and it
-runs `npm run ci`, `npm run package` and the packaged end-to-end suite before
-the release exists. A published tag is immutable: if a run fails, fix it and
-cut the next patch version rather than reusing the tag.
-
-## 🔒 Privacy & safety
-
-- **Local-first.** No account, cloud sync, analytics, or telemetry. Settings,
-  workspaces, and rotating operational logs stay under the local Electron
-  application-data directories. Terminal input and output are not logged.
-- **Uninstall keeps your data.** Removing GitDeck leaves settings and
-  workspaces in `%APPDATA%\GitDeck` so a reinstall finds them; delete that
-  folder yourself to remove every trace. The data folder itself is
-  relocatable from Settings — switching copies your data to the chosen
-  folder on the next start and never deletes the old one.
-- **Update check, disclosed.** At startup — at most once a day — GitDeck makes
-  one anonymous HTTPS request to the GitHub Releases API to learn whether a
-  newer version exists. Nothing is downloaded or installed; no account, token,
-  or identifier is sent. A dismissible notice links to the release page, and
-  the check can be turned off in Settings.
-- **Read-only Git.** The Git integration cannot modify a repository.
-- **Explicit process control.** Port termination is local, confirmed, and
-  process-scoped.
-- **Security reports:** use
-  [GitHub private security advisories](https://github.com/b0yblake/Git-SCM-management/security/advisories/new) —
-  never post credentials, private paths, or logs in public issues.
-- **License:** currently `UNLICENSED`. Public source visibility does not grant
-  permission to redistribute or sublicense the project.
-- **Support:** issues and pull requests are reviewed on a best-effort basis; no
-  support SLA or production warranty is provided.
-
----
+- For bugs and feature requests, use
+  [GitHub Issues](https://github.com/b0yblake/Git-SCM-management/issues).
+- Report vulnerabilities privately through
+  [GitHub Security Advisories](https://github.com/b0yblake/Git-SCM-management/security/advisories/new).
+- Support is best-effort; there is no support SLA or production warranty.
+- The repository is currently **UNLICENSED**. Public source visibility does not
+  grant permission to redistribute or sublicense the project.
 
 <div align="center">
 
-Architecture, test contracts, and implementation phases are documented in
-[`plans/`](plans/).
+**Spend less time finding terminals. Spend more time using them.**
+
+[Download GitDeck 0.5.0](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.exe)
+· [View all releases](https://github.com/b0yblake/Git-SCM-management/releases)
 
 </div>
