@@ -62,8 +62,8 @@ export const DataFolderSetting = (): React.JSX.Element => {
 
       {info?.pending && (
         <p className="data-folder__pending" role="status">
-          Data moves to <code>{info.pending}</code> the next time GitDeck starts. The current folder
-          is left untouched.
+          Data moves to <code>{info.pending}</code> the next time GitDeck starts. The current
+          folder is left untouched.
         </p>
       )}
       {error && (

@@ -67,7 +67,9 @@ describe('choosing', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Change…' }))
 
-    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('D:\\GitDeckData'))
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toContain('D:\\GitDeckData')
+    )
     expect(screen.getByRole('status').textContent).toContain('next time GitDeck starts')
   })
 

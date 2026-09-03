@@ -44,10 +44,7 @@ const register = (): void => {
   })
 }
 
-const invoke = async <T>(
-  channel: string,
-  payload?: unknown
-): Promise<Result<T, { code: string }>> =>
+const invoke = async <T>(channel: string, payload?: unknown): Promise<Result<T, { code: string }>> =>
   (await handlers.get(channel)?.(payload)) as Result<T, { code: string }>
 
 beforeEach(() => {
