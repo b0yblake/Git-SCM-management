@@ -27,8 +27,21 @@ asarUnpack:
   - node_modules/node-pty/**
 
 win:
+  # No spaces. GitHub rewrites them to dots on upload, so a hand-uploaded
+  # "GitDeck Setup 0.3.0.exe" became "GitDeck.Setup.0.3.0.exe" — a name nothing
+  # downstream could predict. The checksums script, the release workflow and
+  # the README all quote this name literally, so it has to be stable.
+  # x64 is written out rather than ${arch} because this app is x64-only
+  # (Phase 11) and the macro resolves to nothing when a target runs without an
+  # explicit arch.
+  artifactName: ${productName}-Setup-${version}-x64.${ext}
   target:
     - target: nsis
+      arch:
+        - x64
+    # Must stay after nsis: msiWrapped embeds the .exe that target produces,
+    # and fails with "NSIS executable not found" if it has not been built yet.
+    - target: msiWrapped
       arch:
         - x64
   icon: build/icon.ico
@@ -43,3 +56,22 @@ nsis:
   runAfterFinish: false
   # Deletes the HKCU Explorer context-menu keys the app writes (Phase 18).
   include: build/installer.nsh
+
+# The MSI is a deployment wrapper around the NSIS installer above, not a second
+# product: it embeds that .exe and runs it silently. Two things this repository
+# already promises depend on that choice. One install lineage — EXE and MSI put
+# the same app in the same directory with one entry in Installed apps, instead
+# of registering two products for one program. And Phase 18's uninstall
+# contract survives: installer.nsh is the only thing that removes the HKCU
+# context-menu keys, and a native msi target can neither run it nor express the
+# same cleanup in its WiX template.
+#
+# The trade, so it is not discovered later: this MSI registers no product of
+# its own, so `msiexec /x` does nothing and uninstall goes through Installed
+# apps like the EXE. It exists for `msiexec /i ... /qn`, Intune and GPO.
+msiWrapped:
+  wrappedInstallerArgs: /S
+  # Required. The custom action runs deferred, which is SYSTEM under an
+  # elevated msiexec — without impersonation the per-user NSIS installer would
+  # install GitDeck into SYSTEM's profile rather than the user's.
+  impersonate: true

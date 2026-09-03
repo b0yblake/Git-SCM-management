@@ -108,16 +108,43 @@ For each terminal a workspace stores four things: **name**, **shell**,
 
 ## 🚀 Install
 
-GitDeck targets **Windows 10/11 x64**.
+GitDeck targets **Windows 10/11 x64**. Every release carries two installers.
+They install the same application, so take whichever suits you:
 
-1. Download `GitDeck Setup <version>.exe` from
-   [GitHub Releases](https://github.com/b0yblake/Git-SCM-management/releases).
-2. Run the installer, then launch GitDeck from the Start menu or desktop
-   shortcut.
+| File                              | Use it for                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| `GitDeck-Setup-<version>-x64.exe` | A normal install. Run it, pick a folder, done.                                           |
+| `GitDeck-Setup-<version>-x64.msi` | Scripted or managed rollout: `msiexec /i GitDeck-Setup-<version>-x64.msi /qn`             |
+
+Download from
+[GitHub Releases](https://github.com/b0yblake/Git-SCM-management/releases),
+run it, then launch GitDeck from the Start menu or desktop shortcut.
+
+Both install for the current user into `%LOCALAPPDATA%\Programs\GitDeck` and
+leave a single entry in **Installed apps**. The MSI wraps the same installer,
+so uninstall always goes through that entry — never `msiexec /x`.
 
 > **Unsigned build:** Windows SmartScreen may warn. Verify the installer came
 > from this repository, then choose **More info → Run anyway**. If Releases
 > contains no installer yet, use the source workflow below.
+
+### Verify a download
+
+Every release carries `GitDeck-<version>-checksums.txt`. Compare it with what
+you downloaded:
+
+```powershell
+Get-FileHash .\GitDeck-Setup-<version>-x64.exe -Algorithm SHA256
+```
+
+With the [GitHub CLI](https://cli.github.com) you can check the release's
+signed attestation instead, which also proves the file came from this
+repository's release workflow rather than from someone reusing the name:
+
+```powershell
+gh release verify v<version> -R b0yblake/Git-SCM-management
+gh release verify-asset v<version> .\GitDeck-Setup-<version>-x64.exe -R b0yblake/Git-SCM-management
+```
 
 ### Run from source
 
@@ -130,9 +157,28 @@ npm ci
 npm run dev
 ```
 
-Build a local installer with `npm run package` — it is written to
-`release/GitDeck Setup <version>.exe`. Before opening a pull request, run
-`npm run ci` and `npm run build`.
+Build the installers with `npm run package` — `release/` then holds the EXE,
+the MSI and the checksums file, exactly the three assets a release carries.
+Before opening a pull request, run `npm run ci` and `npm run build`.
+
+### Cutting a release
+
+Releases are built and published by GitHub Actions. Nothing is uploaded by
+hand.
+
+1. Bump `version` in `package.json` and the version badge above.
+2. Append `tests/fixtures/storage/vX.Y.Z/` — the settings, manifest and
+   workspace files this version writes — and add the version to
+   `PUBLISHED_RELEASES` in `storageCompat.integration.spec.ts`. That suite is
+   the proof that a future GitDeck still reads today's data, and it can only
+   prove it for releases it has a fixture for. Commit.
+3. `git tag vX.Y.Z && git push origin main vX.Y.Z`
+4. Watch the **Release** workflow.
+
+The workflow refuses to publish if the tag and `package.json` disagree, and it
+runs `npm run ci`, `npm run package` and the packaged end-to-end suite before
+the release exists. A published tag is immutable: if a run fails, fix it and
+cut the next patch version rather than reusing the tag.
 
 ## 🔒 Privacy & safety
 

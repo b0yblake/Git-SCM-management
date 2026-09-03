@@ -16,7 +16,18 @@ import { activeScreen, launchPackaged } from './support'
  */
 const descendantShells = (rootPid: number): number[] => {
   const script = `
-    $all = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name
+    $all = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name, CreationDate
+    $root = $all | Where-Object { $_.ProcessId -eq ${rootPid} } | Select-Object -First 1
+    if (-not $root) { return }
+
+    # Windows recycles process ids and never rewrites the ParentProcessId of a
+    # process whose parent has exited. A long-lived shell can therefore point at
+    # an id this app has since been given, and the walk below would adopt that
+    # shell and everything under it — on a developer's machine, their own dev
+    # server. Nothing this app started can predate this app, so the tree is
+    # walked over processes no older than the app itself.
+    $all = $all | Where-Object { $_.CreationDate -ge $root.CreationDate }
+
     $wanted = @(${rootPid})
     $found = @()
     for ($i = 0; $i -lt 12; $i++) {

@@ -36,6 +36,14 @@ export default tseslint.config(
   },
 
   {
+    // Build scripts are plain Node, outside the app's three layers. Listed
+    // explicitly rather than globally so a stray `console` in shipped code
+    // still fails.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { console: 'readonly', process: 'readonly' } }
+  },
+
+  {
     files: ['src/shared/**/*.ts'],
     rules: restrict(noElectron('shared/'), noReact('shared/'), noPty('shared/'), noXterm('shared/'))
   },

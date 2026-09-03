@@ -1,0 +1,68 @@
+# Cuts a GitHub release from a tag. Nothing is uploaded by hand.
+#
+# The gates run before the release exists, in the order that fails cheapest
+# first, because publishing is the one step that cannot be undone: with
+# immutable releases enabled the tag and the asset list are locked the moment
+# the draft is published.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The tag is the version. `packaged-pty.spec.ts` already proves the built
+      # binary's FileVersion matches package.json, so together these make a
+      # release whose tag disagrees with its binary impossible rather than
+      # merely unlikely.
+      - name: Tag must equal package.json version
+        shell: bash
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$want" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json ($want)"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - run: npm run ci
+
+      # build -> nsis -> msiWrapped -> checksums
+      - run: npm run package
+
+      # Not part of `npm run ci`: this suite drives the packaged app, so it can
+      # only run after packaging. It rotted for three releases because nothing
+      # ran it automatically — this step is where it belongs.
+      - run: npm run test:e2e
+
+      # Draft first, publish last: assets can only be attached while the
+      # release is a draft, and every asset must be in place before the
+      # release becomes immutable.
+      - name: Draft, upload, publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --generate-notes \
+            --title "GitDeck $v" \
+            "release/GitDeck-$v-checksums.txt#GitDeck $v checksums" \
+            "release/GitDeck-Setup-$v-x64.exe#GitDeck $v Windows x64 EXE Installer" \
+            "release/GitDeck-Setup-$v-x64.msi#GitDeck $v Windows x64 MSI Installer"
+          gh release edit "$GITHUB_REF_NAME" --draft=false
