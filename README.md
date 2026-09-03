@@ -22,7 +22,7 @@ of hunting for them in a crowded tab bar.
 
 Tab bars hide your terminals. GitDeck deals them onto a table instead:
 
-1. **Mosaic** — a live canvas that keeps up to four terminals visible at once.
+1. **Mosaic** — a live canvas that keeps every terminal visible at once.
 2. **Navigator** — a searchable list of every session, visible or parked.
 3. **Workspaces** — saved terminal setups you can reopen with one click.
 
@@ -36,12 +36,12 @@ Command Prompt, or WSL — not an emulation.
 Choose how many shells share the canvas. Switch layouts any time; sessions
 keep running no matter where they sit.
 
-| Layout               | Visible panes | Shape                                    |
-| -------------------- | :-----------: | ---------------------------------------- |
-| **Focus**            |       1       | One terminal fills the canvas            |
-| **Columns**          |       2       | Two equal vertical panes                 |
-| **Main + Side**      |       3       | Large pane left, two stacked panes right |
-| **Grid** _(default)_ |       4       | Responsive 2×2 mosaic                    |
+| Layout               | Visible panes | Shape                                                                     |
+| -------------------- | :-----------: | ------------------------------------------------------------------------- |
+| **Focus**            |       1       | One terminal fills the canvas                                             |
+| **Columns**          |       2       | Two equal vertical panes                                                  |
+| **Main + Side**      |       3       | Large pane left, two stacked panes right                                  |
+| **Grid** _(default)_ |   unlimited   | Elastic mosaic — the lattice re-balances so every terminal stays on one page |
 
 **Park, don't kill.** Remove a terminal from the canvas without stopping it.
 A parked shell keeps running in the background with its output and scrollback

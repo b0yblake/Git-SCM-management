@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "defaultShellProfileId": "powershell",
+  "activeWorkspaceId": "ws_a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "activeTerminalDefinitionId": "term_b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+  "restoreLastWorkspace": true,
+  "runStartupCommandsOnRestore": true,
+  "terminalFontSize": 18,
+  "terminalCursorBlink": false,
+  "confirmBeforeClosingRunningTerminal": false,
+  "checkForUpdatesOnStartup": false,
+  "skippedUpdateVersion": "0.3.0"
+}

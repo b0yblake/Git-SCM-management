@@ -1,6 +1,14 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createFakeLogger, type FakeLogger } from '@main/testing/FakeLogger'
 import { copyDataToNewRoot, resolveDataRoot, writeDataRootPointer } from './dataRoot'
@@ -60,9 +68,9 @@ describe('resolveDataRoot', () => {
     const resolution = resolveDataRoot(defaultRoot, logger)
 
     expect(resolution.dataRoot).toBe(defaultRoot)
-    expect(readdirSync(defaultRoot).some((name) => name.startsWith('data-root.json.corrupt-'))).toBe(
-      true
-    )
+    expect(
+      readdirSync(defaultRoot).some((name) => name.startsWith('data-root.json.corrupt-'))
+    ).toBe(true)
   })
 
   it('an unusable custom folder falls back without losing the pointer', () => {
@@ -130,6 +138,37 @@ describe('copyDataToNewRoot', () => {
     expect(existsSync(join(target, 'backups', 'settings.v1.json'))).toBe(true)
     // The source stays: switching back is always possible.
     expect(existsSync(paths.settingsFile)).toBe(true)
+  })
+
+  it('names the copies exactly what storagePaths mints, not its own literals', () => {
+    // The one place in the app that writes store filenames without asking
+    // `storagePaths.ts` for them (Phase 14's single-path-authority rule):
+    // the copy has to name the files in a folder that has no paths yet, so it
+    // spells them out. Nothing is wrong today — the two agree — but if a store
+    // is ever renamed, the copy would write the old name and the switched
+    // folder would come up empty. Asserted here, by Checkpoint C, so that
+    // rename fails a test instead of a user's data folder.
+    const paths = seed()
+    const target = join(root, 'named')
+
+    expect(copyDataToNewRoot(paths, target, logger)).toBe('copied')
+
+    for (const source of [paths.settingsFile, paths.manifestFile]) {
+      expect(existsSync(join(target, basename(source))), basename(source)).toBe(true)
+    }
+    for (const source of [paths.workspacesDir, paths.backupsDir]) {
+      expect(existsSync(join(target, basename(source))), basename(source)).toBe(true)
+    }
+    // Guards the guard: the target holds these four entries and nothing else,
+    // so a copy that quietly dropped one cannot pass.
+    expect(readdirSync(target).sort()).toEqual(
+      [
+        basename(paths.settingsFile),
+        basename(paths.manifestFile),
+        basename(paths.workspacesDir),
+        basename(paths.backupsDir)
+      ].sort()
+    )
   })
 
   it('adopts a target that already holds GitDeck data — its files win', () => {

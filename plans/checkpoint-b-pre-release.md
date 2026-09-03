@@ -5,7 +5,7 @@
 | **Purpose** | Audit-only gate. Confirm every architectural invariant still holds after eleven phases, then cut `0.1.0`. |
 | **Depends on** | Phase 11 |
 | **Unlocks** | v0.1.0 release |
-| **Status** | ☐ Not started |
+| **Status** | ☐ Never run on its own — absorbed into [Checkpoint C](checkpoint-c-release-readiness.md) on 2026-09-03, which carries every item below |
 
 ---
 

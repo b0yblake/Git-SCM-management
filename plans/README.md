@@ -25,7 +25,7 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 | 9 | [phase-09-git-readonly.md](phase-09-git-readonly.md) | Git as additive, optional, read-only metadata | ☑ |
 | 10 | [phase-10-ui-polish.md](phase-10-ui-polish.md) | Daily-usable without the dev console | ☑ |
 | 11 | [phase-11-packaging.md](phase-11-packaging.md) | Installer that works with no dev tooling present | ◐ |
-| — | [checkpoint-b-pre-release.md](checkpoint-b-pre-release.md) | **Audit gate** — invariants hold, then cut v0.1.0 | ☐ |
+| — | [checkpoint-b-pre-release.md](checkpoint-b-pre-release.md) | **Audit gate** — invariants hold, then cut v0.1.0 | ☐ never run · absorbed by [Checkpoint C](checkpoint-c-release-readiness.md) |
 | 12 | [phase-12-port-management.md](phase-12-port-management.md) | Inspect local ports and safely terminate selected owning processes | ☑ |
 | 13 | [phase-13-terminal-mosaic.md](phase-13-terminal-mosaic.md) | Replace horizontal tabs with a searchable Navigator and four-pane Mosaic canvas | ☑ |
 | 14 | [phase-14-storage-contract.md](phase-14-storage-contract.md) | One owner for every persisted byte: paths, manifest, quarantine, uninstall policy | ☑ |
@@ -34,10 +34,14 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 | 17 | [phase-17-data-folder.md](phase-17-data-folder.md) | User-chosen data folder via pointer file and native picker, applied on restart | ☑ |
 | 18 | [phase-18-explorer-open.md](phase-18-explorer-open.md) | Shift+right-click a folder in Explorer → open it as a terminal in the running (or launched) GitDeck | ☑ |
 | 19 | [phase-19-workspace-shortcut.md](phase-19-workspace-shortcut.md) | Right-click a workspace → Create shortcut…; the .lnk opens that workspace in the running (or launched) GitDeck | ☑ |
+| 20 | [phase-20-add-terminal-slot.md](phase-20-add-terminal-slot.md) | One "Add new Terminal" ghost slot in the next empty pane of Columns/Main+Side/Grid | ☑ |
+| 21 | [phase-21-elastic-grid.md](phase-21-elastic-grid.md) | Grid grows past four: a 16:9-guided lattice keeps every terminal on one page, add slot always last | ☑ |
+| 22 | [phase-22-release-packaging.md](phase-22-release-packaging.md) | One pushed tag → GitHub Release with checksums, EXE + MSI installers, digests and attestation — no hand upload | ◐ |
+| — | [checkpoint-c-release-readiness.md](checkpoint-c-release-readiness.md) | **Audit gate** — absorbs the unrun Checkpoint B, verifies every Phase 12–22 invariant, reconciles the docs, then go/no-go for the first pipeline release | ◐ C1 passed 2026-09-03; 0.5.0 built and gated, tag owed |
 
 > Note on ordering: `PLAN.md` §35 places the architecture checkpoint after Phase 5. It is placed after **Phase 4** here because every item on that checklist is already testable once multi-tab works, and catching a boundary violation before shell detection is written is cheaper. Move it back one row if you prefer to follow §35 literally.
 
-> ◐ = built and verified on the development machine; the clean-machine install remains to be run by hand.
+> ◐ = built and verified on the development machine, with a step left that this machine cannot perform: Phase 11's clean-machine install, and Phase 22's repository setting and first tagged workflow run.
 
 Phase 12 is the first post-v0.1.0 upgrade. It stays after Checkpoint B so the
 existing release boundary can be audited and cut without silently pulling a
@@ -60,6 +64,13 @@ in `BACKLOG.md`, blocked on code signing.
 > feature file, so the boundary Checkpoint B audits is intact — but the audit
 > (and the Phase 11 clean-machine checklist behind the ◐) is still owed, and
 > `version` remains `0.1.0` until it happens.
+>
+> **Superseded 2026-09-03 by Checkpoint C.** Checkpoint B was never run and ten
+> more phases shipped past it; 0.2.0 and 0.3.0 were published by hand and the
+> working version is 0.4.1, so "version remains 0.1.0" stopped being true long
+> ago. Checkpoint C carries every Checkpoint B item plus the Phase 12–22
+> invariants, and owns the go/no-go for the first release cut by the Phase 22
+> pipeline.
 
 Supporting documents:
 

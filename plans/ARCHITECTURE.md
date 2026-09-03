@@ -69,16 +69,25 @@ src/
 │   └── utils/
 │
 ├── main/
-│   ├── bootstrap/     createWindow.ts · registerIpc.ts · container.ts
+│   ├── bootstrap/     container.ts · createWindow.ts · registerIpc.ts
+│   │                  logger.ts · fileSink.ts · applicationMenu.ts   (Phases 0–12)
+│   │                  storagePaths.ts · storageManifest.ts · quarantine.ts   (Phase 14)
+│   │                  migrations.ts   (Phase 15)
+│   │                  dataRoot.ts · dataRootIpc.ts   (Phase 17)
+│   │                  openPath.ts · openPathIpc.ts · explorerMenu.ts   (Phase 18)
+│   │                  workspaceLaunch.ts · workspaceLaunchIpc.ts   (Phase 19)
 │   ├── features/
-│   │   ├── terminal/  domain/ application/ infrastructure/ ipc/ public.ts
-│   │   ├── workspace/ domain/ application/ infrastructure/ ipc/ public.ts
-│   │   ├── git/       domain/ application/ infrastructure/ ipc/ public.ts
-│   │   ├── settings/  domain/ application/ infrastructure/ ipc/ public.ts
-│   │   └── ports/     domain/ application/ infrastructure/ ipc/ public.ts   (Phase 12)
+│   │   ├── terminal/  domain/ application/ infrastructure/ ipc/ testing/ public.ts
+│   │   ├── workspace/ domain/ application/ infrastructure/ ipc/ testing/ public.ts
+│   │   ├── git/       domain/ application/ infrastructure/ ipc/ testing/ public.ts
+│   │   ├── settings/  domain/ application/ infrastructure/ ipc/ testing/ public.ts
+│   │   ├── ports/     domain/ application/ infrastructure/ ipc/ testing/ public.ts   (Phase 12)
+│   │   └── updates/   domain/ application/ infrastructure/ ipc/ testing/ public.ts   (Phase 16)
 │   └── index.ts
 │
-├── preload/           terminalApi.ts · workspaceApi.ts · gitApi.ts · settingsApi.ts · portsApi.ts · types.d.ts · index.ts
+├── preload/           api.ts · index.ts · types.d.ts
+│                      terminalApi.ts · workspaceApi.ts · gitApi.ts · settingsApi.ts
+│                      portsApi.ts (Phase 12) · updatesApi.ts (Phase 16) · storageApi.ts (Phase 17)
 │
 └── renderer/src/
     ├── app/           App.tsx · routes.tsx · providers.tsx
@@ -87,10 +96,17 @@ src/
     │   ├── workspace/ components/ hooks/ store/ public.ts
     │   ├── git/       components/ hooks/ store/ public.ts
     │   ├── settings/  components/ hooks/ store/ public.ts
-    │   └── ports/     components/ hooks/ store/ public.ts   (Phase 12)
+    │   ├── ports/     components/ hooks/ store/ public.ts   (Phase 12)
+    │   └── updates/   components/ hooks/ store/ public.ts   (Phase 16)
     ├── shared/        components/ hooks/ styles/ utils/
+    ├── testing/       fakeGitDeckApi.ts · setup.ts
     └── main.tsx
 ```
+
+> The bootstrap directory is where anything that must exist *before* a feature
+> does lives: the data root, the storage paths every feature is handed, the
+> launch arguments, and the registry entry the installer removes. It is not a
+> feature and exposes no `public.ts`.
 
 ---
 
@@ -198,9 +214,11 @@ interface AppSettings {
   activeTerminalDefinitionId: string | null // Phase 8 — a definition, never a session
   restoreLastWorkspace: boolean // Phase 8, default true
   runStartupCommandsOnRestore: boolean // Phase 8, default FALSE on purpose
-  terminalFontSize: number // Phase 10, clamped to 8..32
-  terminalCursorBlink: boolean // Phase 10
+  terminalFontSize: number // Phase 10, clamped to 8..32, default 14
+  terminalCursorBlink: boolean // Phase 10, default true
   confirmBeforeClosingRunningTerminal: boolean // Phase 10, default true
+  checkForUpdatesOnStartup: boolean // Phase 16, default true
+  skippedUpdateVersion: string | null // Phase 16, default null
 }
 ```
 
@@ -272,7 +290,9 @@ export const IPC = {
     kill: 'terminal:kill',
     profiles: 'terminal:profiles',
     data: 'terminal:data',
-    exit: 'terminal:exit'
+    exit: 'terminal:exit',
+    pendingOpenPath: 'terminal:pendingpath', // Phase 18 — pulled once at start
+    openPath: 'terminal:openpath' // Phase 18 — pushed by a second instance
   },
   settings: {
     get: 'settings:get',
@@ -282,7 +302,10 @@ export const IPC = {
     list: 'workspace:list',
     get: 'workspace:get',
     save: 'workspace:save',
-    delete: 'workspace:delete'
+    delete: 'workspace:delete',
+    shortcut: 'workspace:shortcut', // Phase 19 — the save dialog owns the path
+    pendingOpen: 'workspace:pendingopen', // Phase 19 — mirrors Phase 18
+    open: 'workspace:open'
   },
   git: {
     inspect: 'git:inspect'
@@ -291,11 +314,32 @@ export const IPC = {
     list: 'ports:list',
     terminate: 'ports:terminate', // the only destructive channel there is
     open: 'ports:open' // Main → renderer: the native File → Port… menu entry
+  },
+  updates: {
+    check: 'updates:check', // Phase 16 — read-only
+    release: 'updates:release', // opens the URL Main minted; takes none
+    available: 'updates:available'
+  },
+  storage: {
+    info: 'storage:info', // Phase 17 — the picker is native and Main-owned
+    choose: 'storage:choose' // no channel accepts a filesystem path
   }
 } as const
 ```
 
-No arbitrary channel strings scattered through the codebase.
+Seven namespaces, twenty-seven channels. No arbitrary channel strings scattered
+through the codebase, enforced by a repository scan in
+`shared/contracts/ipc.spec.ts`.
+
+> `shared/contracts/ipc.snapshot.spec.ts` is the authority, not this listing:
+> it pins the surface exactly and has to be edited deliberately. If the two
+> ever disagree, the snapshot is right and this section is stale.
+
+**The rule every channel added since v0.1.0 was designed around:** no channel
+accepts a PID, a process name, a signal, a filesystem path or a URL. Ports
+takes capabilities Main minted, updates opens only the URL Main minted, storage
+opens a native picker and takes no payload, and both launch-argument channels
+take no payload at all.
 
 ---
 
@@ -350,6 +394,21 @@ interface GitDeckApi {
     ): Promise<Result<TerminatePortProcessesResult, IpcError>>
     onOpen(callback: () => void): Unsubscribe
   }
+  updates: {
+    // Phase 16. `openRelease` takes no URL: Main opens only the release URL
+    // it minted from a validated tag. There is deliberately no member
+    // anywhere on this API through which a renderer-supplied URL can travel.
+    check(): Promise<Result<UpdateCheckResult, IpcError>>
+    openRelease(): Promise<Result<null, IpcError>>
+    onAvailable(callback: (result: UpdateCheckResult) => void): Unsubscribe
+  }
+  storage: {
+    // Phase 17. `chooseDataFolder` opens the native folder picker and
+    // resolves with the new state, or null when the user cancelled. Neither
+    // member accepts a path: the picker is the only source of one.
+    dataFolder(): Promise<Result<DataFolderInfo, IpcError>>
+    chooseDataFolder(): Promise<Result<DataFolderInfo | null, IpcError>>
+  }
 }
 ```
 
@@ -362,8 +421,14 @@ Never expose `ipcRenderer` or raw Electron objects.
 Zustand, one store per feature. No single global store.
 
 ```text
-terminalStore · workspaceStore · gitStore · settingsStore · portsStore · uiStore
+terminalStore · workspaceStore · gitStore · settingsStore · portsStore · updatesStore
 ```
+
+`terminalStore` also owns the Mosaic layout (Phases 13, 20, 21): the selected
+mode, which sessions are on the canvas, and which is focused. Capacity is
+`focus: 1`, `columns: 2`, `main-side: 3`, `grid: Infinity` — Grid means *one
+page, every terminal*, so its bounded-mode eviction and parked-session backfill
+paths do not run. Layout is deliberately **not** persisted.
 
 ```ts
 interface TerminalUiState {
@@ -384,13 +449,29 @@ class ShellNotFoundError extends Error {}
 class TerminalSessionNotFoundError extends Error {}
 class WorkspaceNotFoundError extends Error {}
 class InvalidWorkspaceError extends Error {}
+class NoShellAvailableError extends Error {} // nothing to fall back to
 class GitNotAvailableError extends Error {}
+class GitOutputError extends Error {} // git answered, unreadably
+class GitTimeoutError extends Error {} // git did not answer in time
 // Phase 12
 class PortInspectionError extends Error {}
+class PortInspectionTimeoutError extends Error {}
 class PortSnapshotStaleError extends Error {} // stale modal → stable answer: refresh
 class InvalidPortRequestError extends Error {} // unknown/blocked capability — rejected whole
 class PortAccessDeniedError extends Error {} // per-target failure, never a reason to elevate
+class PortTerminationError extends Error {} // taskkill failed for any other reason
+// Phase 15 / 16 — bootstrap and updates, outside the AppError hierarchy
+class MigrationError extends Error {} // a gap or a throwing step → quarantine
+class UpdateCheckFailedError extends Error {} // every network/parse failure, silently
 ```
+
+Everything above except the last two extends `AppError` and carries a stable
+`code`. Two error classes are deliberately **not** listed here because they are
+internal control flow rather than contract: `InvalidRequestError`
+(`terminal/ipc`) and `NewerWorkspaceFileError` (`workspace/infrastructure`).
+Both are unexported, and both are proven by behaviour tests rather than by
+name. Checkpoint C treats this list as the contract: a new exported error class
+belongs here in the same change.
 
 IPC handlers convert errors to serializable responses. The renderer never receives a native `Error` carrying internal Electron state.
 

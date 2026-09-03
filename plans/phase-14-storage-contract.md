@@ -238,7 +238,11 @@ IPC contracts, preload, renderer, terminal engine, Git, ports.
 ### Regression and boundary
 
 - [x] Settings, workspace, terminal, Git and ports suites pass unchanged.
-- [x] No feature `public.ts` signature changed.
+- [x] ~~No feature `public.ts` signature changed.~~ **Contradicted by this
+      phase's own Deviation**, flagged by Checkpoint C 2026-09-03:
+      `createSettingsService` and `createWorkspaceService` take minted paths,
+      because the scan rule and the unchanged-signature rule could not both
+      hold. The scan rule won; the signature change is the recorded cost.
 - [x] Repository scan: `app.getPath` appears only in `container.ts` /
       bootstrap, `join(...'settings.json')` and `'workspaces'` only in
       `storagePaths.ts` and tests.

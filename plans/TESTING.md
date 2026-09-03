@@ -43,6 +43,27 @@ src/main/features/terminal/application/TerminalManager.spec.ts
 | `*.spec.ts` | unit test, no real OS resource |
 | `*.integration.spec.ts` | touches a real shell / fs / git binary |
 | `tests/e2e/*.spec.ts` | Playwright against the packaged app — Phase 11, plus one spec per OS-touching post-v0.1 phase |
+
+The packaged suite today, and the phase each file answers for:
+
+| Spec | Phase | Covers |
+|---|---|---|
+| `smoke.spec.ts` | 11 | the ten-step critical flow, twice against one profile |
+| `packaged-pty.spec.ts` | 11 | node-pty inside the built artifact; the shipped version |
+| `no-orphans.spec.ts` | 11 | shutdown reaps every shell the app started |
+| `ports.spec.ts` | 12 | inspect and terminate, against a listener the test spawned |
+| `launch-arguments.spec.ts` | 18, 19 | second-instance forwarding of `--open-path` and `--open-workspace` |
+| `release-assets.spec.ts` | 22 | the three release files, their names and their checksums |
+
+Phase 16 has no packaged spec and says so in writing: a bounded outbound GET
+against a service that answered 404 until the first real release is not
+usefully E2E-testable. Phases 13, 20 and 21 are renderer-only and correctly
+add none.
+
+**Running the packaged suite needs the installed GitDeck closed.** Each spec
+isolates itself with `--user-data-dir`, so the single-instance lock (Phase 18)
+does not collide — but a live smoke run by hand does, and Phase 20 skipped its
+visual check for exactly that reason.
 | `src/**/testing/*.ts` | test doubles — **not** test files, never contain `it()` |
 | `tests/fixtures/**` | captured real-world inputs |
 
@@ -63,6 +84,8 @@ Build these once and reuse them across phases. Each lives in the feature's `test
 | `FakeGitAdapter` | Phase 9 | `GitCliAdapter` | returns scripted status or throws `GitNotAvailableError` |
 | `FakeLogger` | Phase 0 | `Logger` | captures entries so tests can assert on logged failures |
 | `FakePortAdapter` | Phase 12 | `WindowsPortAdapter` | scripted inspections (list → revalidate → verify) and per-pid termination outcomes; records every pid asked to die |
+| `InMemorySettingsStore` | Phase 6 | `JsonSettingsStore` | same interface, no disk |
+| `FakeReleaseClient` | Phase 16 | `GitHubReleaseClient` | scripted release answers or a scripted failure; records every call so a test can assert **zero** |
 
 A test that needs a double not on this list should ask whether the module under test has too many dependencies.
 

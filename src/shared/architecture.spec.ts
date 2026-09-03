@@ -157,3 +157,78 @@ describe('layer boundaries not covered by lint', () => {
     expect(missing).toEqual([])
   })
 })
+
+/**
+ * The ways this application can reach outside itself: the network, the user's
+ * browser, and another OS process. Checkpoint C promotes these from a manual
+ * "repository scan" — which Phases 12 and 16 each ticked once, by hand, and
+ * which said nothing on every commit after — to an allow-list that has to be
+ * edited deliberately.
+ *
+ * Comments are stripped first, so prose mentioning `fetch` or `child_process`
+ * cannot widen the list, and a real call cannot hide inside one.
+ */
+describe('outward call sites', () => {
+  /** Production source: doubles included, specs excluded — a spec may spawn. */
+  const files = sourceFiles(SRC).filter((file) => !/\.spec\.tsx?$/.test(file))
+
+  const stripComments = (source: string): string =>
+    source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+
+  const code = (file: string): string => stripComments(readFileSync(file, 'utf8'))
+
+  const matching = (pattern: RegExp): string[] =>
+    files
+      .filter((file) => pattern.test(code(file)))
+      .map(show)
+      .sort()
+
+  const NETWORK = /(^|[^.\w])fetch([^\w]|$)|net\.request|XMLHttpRequest|WebSocket|sendBeacon/
+  const BROWSER = /^import \{[^}]*\bshell\b[^}]*\} from 'electron'/m
+  const PROCESS = /from '(node:)?child_process'/
+
+  it('scans a meaningful number of production files', () => {
+    expect(files.length).toBeGreaterThan(25)
+  })
+
+  it('recognises an outward call when it sees one', () => {
+    // Guards the guard, and pins what comment-stripping must not swallow.
+    expect(NETWORK.test('const r = await fetch(url)')).toBe(true)
+    expect(NETWORK.test('fetchFn(url)')).toBe(false)
+    expect(BROWSER.test("import { shell } from 'electron'")).toBe(true)
+    expect(PROCESS.test("import { execFile } from 'node:child_process'")).toBe(true)
+    expect(stripComments('// fetch\n/* child_process */\nconst x = 1')).not.toMatch(
+      /fetch|child_process/
+    )
+  })
+
+  it('reaches the network from one file only', () => {
+    // Phase 16: one anonymous, bounded, pinned-URL GET and nothing else. The
+    // renderer has no network surface at all.
+    expect(matching(NETWORK)).toEqual([
+      'main/features/updates/infrastructure/GitHubReleaseClient.ts'
+    ])
+  })
+
+  it('holds Electron shell in the composition root only', () => {
+    // `shell.openExternal` sends a URL to the user's browser. Both holders
+    // pass a URL the application minted: createWindow denies a second window
+    // and forwards the link it was handed, registerIpc injects the opener
+    // into the updates handler, which only ever passes its own minted release
+    // URL. No IPC channel accepts a URL from the renderer.
+    expect(matching(BROWSER)).toEqual([
+      'main/bootstrap/createWindow.ts',
+      'main/bootstrap/registerIpc.ts'
+    ])
+  })
+
+  it('starts an OS process from three files only', () => {
+    // Phase 12's rule generalised: process creation is an infrastructure
+    // concern with a named owner. node-pty has its own case above.
+    expect(matching(PROCESS)).toEqual([
+      'main/bootstrap/explorerMenu.ts',
+      'main/features/git/infrastructure/GitCliAdapter.ts',
+      'main/features/ports/infrastructure/WindowsPortAdapter.ts'
+    ])
+  })
+})

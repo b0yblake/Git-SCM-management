@@ -1,0 +1,11 @@
+{
+  "manifestVersion": 1,
+  "firstRunAt": 1756700000000,
+  "lastRunAt": 1756880000000,
+  "lastRunAppVersion": "0.3.0",
+  "storeVersions": {
+    "settings": 1,
+    "workspace": 1
+  },
+  "lastUpdateCheckAt": 1756879000000
+}

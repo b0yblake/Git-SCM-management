@@ -55,8 +55,17 @@ Written into `ARCHITECTURE.md` by this phase; every later phase inherits it.
    copied to `backups/` before the store writes the new shape. One backup per
    file per version step, kept indefinitely (they are small); never deleted by
    later runs.
-5. **Migrate in Main, in the application layer.** Stores stay dumb
-   read/write. The renderer never sees a pre-migration shape.
+5. **Migrate in Main, before anything leaves the store.** The renderer never
+   sees a pre-migration shape, and the migrations themselves are pure and
+   injected from each feature's domain (`settingsMigrations.ts`,
+   `workspaceMigrations.ts`).
+   *Reworded by Checkpoint C 2026-09-03 to match what shipped.* It originally
+   read "in the application layer", which this phase's own Deviation 1
+   contradicts: the raw pre-normalize JSON a migration needs exists only
+   inside the store's read path, so orchestration lives there. The layering
+   the rule actually protects — pure migrations, Main-only, renderer never
+   exposed — is intact, and `ARCHITECTURE.md` §15 already says "inside the
+   store on load".
 6. **Downgrades degrade, never destroy.** An older GitDeck reading a newer
    file: settings fall back per-field to defaults, workspace files are
    skipped — both without modifying the file (the Phase 14 carve-out). The
@@ -212,7 +221,11 @@ contracts, preload, renderer, terminal engine, Git, ports.
 - [x] A second launch does not migrate again and does not touch the backup.
 - [x] A migration failure quarantines the file, serves defaults, and the app
       construction does not throw.
-- [x] Manifest `storeVersions.settings` is bumped only on success.
+- [x] ~~Manifest `storeVersions.settings` is bumped only on success.~~
+      **Contradicted by this phase's own Deviation 2**, flagged by Checkpoint C
+      2026-09-03: the manifest records the current constants at startup rather
+      than being bumped per migration. Equivalent today, because write-back
+      happens in the same startup — but it is not what this box says.
 
 ### Orchestration — workspaces
 

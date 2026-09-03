@@ -296,8 +296,19 @@ ports, both store schema versions.
 - [x] Terminal, workspace, Git, ports suites pass unchanged.
 - [x] Store schemas remain v1.
 - [x] Repository scan: no `fetch`/`net.request` outside
-      `GitHubReleaseClient.ts`; no `shell.openExternal` outside the updates
-      IPC layer; no raw `'updates:'` channel outside `shared/contracts/ipc.ts`.
+      `GitHubReleaseClient.ts`; ~~no `shell.openExternal` outside the updates
+      IPC layer~~; no raw `'updates:'` channel outside
+      `shared/contracts/ipc.ts`.
+      **Corrected by Checkpoint C 2026-09-03.** The middle clause was never
+      true: `createWindow.ts` also calls `shell.openExternal`, in the
+      window-open handler that denies a second window and hands the link to
+      the browser, and `registerIpc.ts` is where the opener is injected into
+      this feature's handler. The updates IPC layer never imports Electron's
+      `shell` at all — it receives an injected function, which is what makes
+      it testable. The guarantee that matters is intact and is now enforced on
+      every commit rather than scanned once by hand: `architecture.spec.ts`
+      pins the network to this one file and Electron's `shell` to those two,
+      and no IPC channel accepts a URL.
 
 ---
 

@@ -14,6 +14,18 @@ const PRELOAD = join(import.meta.dirname, '../preload/index.cjs')
  */
 const ICON = join(import.meta.dirname, '../../build/icon.png')
 
+/**
+ * What may be handed to the user's browser.
+ *
+ * `shell.openExternal` launches whatever the operating system has registered
+ * for a scheme, which for `file:` means opening a file and for a custom scheme
+ * means starting whichever application claimed it. Nothing in this renderer
+ * opens a link today, so this closes a door before anything walks through it
+ * rather than fixing a live bug (Checkpoint C).
+ */
+export const mayOpenExternally = (url: string): boolean =>
+  url.startsWith('https://') || url.startsWith('http://')
+
 export const createWindow = (): BrowserWindow => {
   const window = new BrowserWindow({
     width: 1280,
@@ -45,7 +57,7 @@ export const createWindow = (): BrowserWindow => {
   // Nothing in this app opens a second window; anything that tries is a link
   // and belongs in the user's browser.
   window.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url)
+    if (mayOpenExternally(url)) void shell.openExternal(url)
     return { action: 'deny' }
   })
 

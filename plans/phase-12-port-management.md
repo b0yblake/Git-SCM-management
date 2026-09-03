@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Purpose** | Let the user inspect local ports and deliberately terminate the process that owns a selected port from **File → Port…**, without exposing generic process execution to the renderer. |
-| **Depends on** | Checkpoint B / v0.1.0 release boundary |
+| **Depends on** | ~~Checkpoint B / v0.1.0 release boundary~~ — never satisfied; Checkpoint B was never run and [Checkpoint C](checkpoint-c-release-readiness.md) now audits this phase's invariants instead (annotated 2026-09-03) |
 | **Unlocks** | v0.2.0 release candidate |
 | **Status** | ☑ Complete — verified 2026-08-28, incl. packaged E2E |
 

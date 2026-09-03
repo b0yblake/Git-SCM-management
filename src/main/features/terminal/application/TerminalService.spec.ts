@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createFakeLogger } from '@main/testing/FakeLogger'
+import { NoShellAvailableError } from '../domain/errors'
 import { FakePtyFactory } from '../testing/FakePtyFactory'
 import { TerminalManager } from './TerminalManager'
 import { DEFAULT_COLS, DEFAULT_ROWS, DEFAULT_TITLE, TerminalService } from './TerminalService'
@@ -27,6 +28,22 @@ describe('TerminalService.create', () => {
 
     expect(session.definition.cwd).toBe(DEFAULT_CWD)
     expect(factory.last.options.cwd).toBe(DEFAULT_CWD)
+  })
+
+  it('refuses to guess when the machine has no shell at all', () => {
+    // A machine with nothing detected, and a request that names no profile:
+    // the one branch where there is nothing to fall back to. Added by
+    // Checkpoint C, which found this error class thrown in production and
+    // asserted by no test — so nothing proved the service failed here rather
+    // than spawning something arbitrary.
+    const bare = new TerminalService(new TerminalManager(factory, createFakeLogger()), {
+      ...SERVICE_OPTIONS,
+      defaultShellProfileId: () => null,
+      availableShellProfiles: () => []
+    })
+
+    expect(() => bare.create({})).toThrow(NoShellAvailableError)
+    expect(factory.created).toHaveLength(0)
   })
 
   it('fills in every default when the request carries only a cwd', () => {

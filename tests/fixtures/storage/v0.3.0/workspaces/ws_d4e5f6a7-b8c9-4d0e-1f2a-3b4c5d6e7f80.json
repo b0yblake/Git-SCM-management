@@ -1,0 +1,16 @@
+{
+  "id": "ws_d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
+  "name": "docs-site",
+  "version": 1,
+  "terminals": [
+    {
+      "id": "term_a7b8c9d0-e1f2-4a3b-4c5d-6e7f80910213",
+      "title": "Docs",
+      "cwd": "C:\\work\\docs",
+      "shellProfileId": "git-bash",
+      "startupCommand": "npm run docs:dev"
+    }
+  ],
+  "createdAt": 1756800000000,
+  "updatedAt": 1756870000000
+}

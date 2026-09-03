@@ -23,6 +23,16 @@ const versions = readdirSync(FIXTURES, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
 
+/**
+ * Every GitDeck version that has been released, or is being cut. Bumping the
+ * version appends its number here and its folder above, in the same change and
+ * before the tag (README, "Cutting a release"). Listed rather than discovered
+ * so a forgotten fixture fails this suite instead of quietly narrowing what
+ * "old data always loads" is proven against — which is exactly what happened
+ * to 0.2.0 and 0.3.0, and what Checkpoint C found.
+ */
+const PUBLISHED_RELEASES = ['v0.1.0', 'v0.2.0', 'v0.3.0', 'v0.5.0']
+
 /** Spot checks per known release, beyond "loads without complaint". */
 const EXPECTED_SETTINGS: Record<string, Partial<AppSettings>> = {
   'v0.1.0': {
@@ -35,6 +45,48 @@ const EXPECTED_SETTINGS: Record<string, Partial<AppSettings>> = {
     // proving the "additions are not migrations" rule on a real old file.
     checkForUpdatesOnStartup: true,
     skippedUpdateVersion: null
+  },
+  // 0.2.0 was the first release carrying Phases 14–16, so its files hold all
+  // eleven fields. Every value below differs from the shipped default, which
+  // is what makes this set prove the loader preserves a real user's choices
+  // rather than quietly handing back defaults.
+  'v0.2.0': {
+    version: 1,
+    defaultShellProfileId: 'powershell',
+    restoreLastWorkspace: true,
+    runStartupCommandsOnRestore: true,
+    terminalFontSize: 18,
+    terminalCursorBlink: false,
+    confirmBeforeClosingRunningTerminal: false,
+    checkForUpdatesOnStartup: false,
+    skippedUpdateVersion: '0.3.0'
+  },
+  // 0.3.0 added the data-folder pointer (Phase 17), which lives outside the
+  // data root and so leaves this shape unchanged — asserted, not assumed.
+  'v0.3.0': {
+    version: 1,
+    defaultShellProfileId: 'wsl',
+    restoreLastWorkspace: false,
+    runStartupCommandsOnRestore: false,
+    terminalFontSize: 12,
+    terminalCursorBlink: true,
+    confirmBeforeClosingRunningTerminal: true,
+    checkForUpdatesOnStartup: true,
+    skippedUpdateVersion: null
+  },
+  // The only set written by a running GitDeck rather than authored to shape:
+  // the packaged 0.5.0 build saved a workspace and a full settings patch
+  // through its own IPC, and those files were copied here unedited.
+  'v0.5.0': {
+    version: 1,
+    defaultShellProfileId: 'cmd',
+    restoreLastWorkspace: true,
+    runStartupCommandsOnRestore: true,
+    terminalFontSize: 20,
+    terminalCursorBlink: false,
+    confirmBeforeClosingRunningTerminal: false,
+    checkForUpdatesOnStartup: false,
+    skippedUpdateVersion: '0.6.0'
   }
 }
 
@@ -53,6 +105,10 @@ afterEach(() => {
 describe('storage backward compatibility', () => {
   it('discovers the released fixture sets dynamically', () => {
     expect(versions).toContain('v0.1.0')
+  })
+
+  it('holds a fixture set for every published release', () => {
+    expect(versions).toEqual(expect.arrayContaining(PUBLISHED_RELEASES))
   })
 
   for (const version of versions) {

@@ -70,7 +70,9 @@ test('a user can work, save a workspace, restart and find it restored', async ()
     await first.page.getByRole('button', { name: 'Workspaces' }).click()
     await first.page.getByRole('button', { name: 'New workspace' }).click()
     await fillField(first.page, 'Workspace name', 'Smoke')
-    await first.page.getByRole('button', { name: 'Add terminal' }).click()
+    // The editor opens with one terminal already drafted at the default
+    // directory, so this flow retitles and redirects it rather than adding
+    // a second one that would fail validation for an empty directory.
     await fillField(first.page, 'Title', 'Repo')
     await fillField(first.page, 'Working directory', repo)
     await first.page.getByRole('button', { name: 'Save workspace' }).click()
