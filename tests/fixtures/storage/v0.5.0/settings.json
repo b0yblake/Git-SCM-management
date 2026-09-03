@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "defaultShellProfileId": "cmd",
+  "activeWorkspaceId": "ws_70596905-25f8-4056-9f8f-381ed8d5b6f5",
+  "activeTerminalDefinitionId": "term_0a1b2c3d-4e5f-4061-8273-849506172839",
+  "restoreLastWorkspace": true,
+  "runStartupCommandsOnRestore": true,
+  "terminalFontSize": 20,
+  "terminalCursorBlink": false,
+  "confirmBeforeClosingRunningTerminal": false,
+  "checkForUpdatesOnStartup": false,
+  "skippedUpdateVersion": "0.6.0"
+}

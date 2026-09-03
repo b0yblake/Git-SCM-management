@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
@@ -35,10 +36,21 @@ test.describe('the packaged native module', () => {
     expect(existsSync(join(UNPACKED, 'resources', 'app.asar'))).toBe(true)
   })
 
-  test('the shipped version is the intended release', () => {
+  /**
+   * Guards a stale `release/` directory: a build left over from an earlier
+   * version looks identical on disk, and shipping it is silent. Comparing the
+   * binary's own metadata to `package.json` never goes stale itself, which a
+   * hard-coded version literal did — it pinned 0.1.0 for three releases.
+   */
+  test('the shipped binary carries the repository version', () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }
+    const shipped = execFileSync(
+      'powershell.exe',
+      ['-NoProfile', '-Command', `(Get-Item '${PACKAGED_APP}').VersionInfo.FileVersion`],
+      { encoding: 'utf8' }
+    ).trim()
 
-    expect(pkg.version).toBe('0.1.0')
+    expect(shipped).toBe(pkg.version)
   })
 
   /** The real one: a PTY spawned by the packaged binary, running a real shell. */
