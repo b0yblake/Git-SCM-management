@@ -33,7 +33,13 @@ describe('the IPC surface', () => {
         list: 'workspace:list',
         get: 'workspace:get',
         save: 'workspace:save',
-        delete: 'workspace:delete'
+        delete: 'workspace:delete',
+        // Phase 19 — deliberate addition. Workspace shortcuts: create the
+        // .lnk (the save dialog owns the path), plus the open-forwarding
+        // pull/push pair mirroring Phase 18.
+        shortcut: 'workspace:shortcut',
+        pendingOpen: 'workspace:pendingopen',
+        open: 'workspace:open'
       },
       git: {
         inspect: 'git:inspect'
@@ -62,7 +68,7 @@ describe('the IPC surface', () => {
     })
   })
 
-  it('holds seven namespaces and twenty-four channels', () => {
+  it('holds seven namespaces and twenty-seven channels', () => {
     // A count is a second, blunter guard: renaming a channel keeps the count,
     // but adding one cannot.
     const namespaces = Object.keys(IPC)
@@ -77,6 +83,6 @@ describe('the IPC surface', () => {
       'updates',
       'storage'
     ])
-    expect(channels).toHaveLength(24)
+    expect(channels).toHaveLength(27)
   })
 })

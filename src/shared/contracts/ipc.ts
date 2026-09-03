@@ -28,7 +28,13 @@ export const IPC = {
     list: 'workspace:list',
     get: 'workspace:get',
     save: 'workspace:save',
-    delete: 'workspace:delete'
+    delete: 'workspace:delete',
+    /** Creates a .lnk for a workspace; the save dialog owns the path. */
+    shortcut: 'workspace:shortcut',
+    /** Pull: the --open-workspace id queued at launch, once. */
+    pendingOpen: 'workspace:pendingopen',
+    /** One-way Main → renderer: a second instance forwarded a workspace. */
+    open: 'workspace:open'
   },
 
   git: {

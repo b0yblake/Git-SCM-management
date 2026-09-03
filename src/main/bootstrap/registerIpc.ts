@@ -1,4 +1,5 @@
-import { dialog, shell } from 'electron'
+import { join } from 'node:path'
+import { app, dialog, shell } from 'electron'
 import { registerSettingsIpc } from '../features/settings/public'
 import { registerGitIpc } from '../features/git/public'
 import { registerPortsIpc } from '../features/ports/public'
@@ -9,6 +10,7 @@ import type { AppContainer } from './container'
 import { registerDataRootIpc } from './dataRootIpc'
 import { electronBroadcaster, electronIpcRegistry } from './ipcPorts'
 import { registerOpenPathIpc } from './openPathIpc'
+import { registerWorkspaceLaunchIpc } from './workspaceLaunchIpc'
 
 /**
  * Single place where every feature's IPC handlers are registered.
@@ -76,6 +78,36 @@ export const registerIpc = (container: AppContainer): void => {
   registerOpenPathIpc({
     registry: electronIpcRegistry,
     openPath: container.openPath
+  })
+
+  registerWorkspaceLaunchIpc({
+    registry: electronIpcRegistry,
+    launch: container.workspaceLaunch,
+    workspaceName: (workspaceId) => {
+      try {
+        return container.workspace.get(workspaceId).name
+      } catch {
+        return null
+      }
+    },
+    // The save dialog is the only source of a shortcut path.
+    pickSavePath: async (defaultFileName) => {
+      const result = await dialog.showSaveDialog({
+        defaultPath: join(app.getPath('desktop'), defaultFileName),
+        filters: [{ name: 'Shortcut', extensions: ['lnk'] }]
+      })
+      return result.canceled || !result.filePath ? null : result.filePath
+    },
+    writeShortcut: (shortcutPath, definition) =>
+      shell.writeShortcutLink(shortcutPath, 'create', {
+        target: definition.target,
+        args: definition.args,
+        icon: definition.icon,
+        iconIndex: definition.iconIndex,
+        description: definition.description
+      }),
+    exePath: process.execPath,
+    logger: container.logger
   })
 
   container.logger.debug(

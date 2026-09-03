@@ -4,6 +4,7 @@ import { createId } from '@shared/domain/ids'
 import { useToastStore } from '../../../shared/store/toastStore'
 import { useShellProfiles, useTerminalStore } from '../../terminal/public'
 import { useOpenWorkspace } from '../hooks/useOpenWorkspace'
+import { useOpenWorkspaceRequest } from '../hooks/useOpenWorkspaceRequest'
 import { useRestoreOnStartup } from '../hooks/useRestoreOnStartup'
 import { useWorkspaces } from '../hooks/useWorkspaces'
 import { WorkspaceEditor } from './WorkspaceEditor'
@@ -49,6 +50,25 @@ export const WorkspacePanel = ({
     if (restore.status === 'settled') onRestoreSettled?.()
   }, [restore.status, onRestoreSettled])
 
+  // Shortcut launches (Phase 19): --open-workspace pulled/pushed into the
+  // same open flow the sidebar uses, after restore has settled.
+  useOpenWorkspaceRequest({
+    enabled: restore.status === 'settled',
+    open: opener.open,
+    ...(onWorkspaceOpened ? { onOpened: onWorkspaceOpened } : {})
+  })
+
+  const createShortcut = useCallback(async (workspaceId: string) => {
+    const result = await window.gitdeck.workspace.createShortcut(workspaceId)
+    if (!result.ok) {
+      useToastStore.getState().push('error', result.error.message)
+      return
+    }
+    // null means the save dialog was cancelled — nothing to say.
+    if (result.value) {
+      useToastStore.getState().push('info', `Shortcut created: ${result.value.path}`)
+    }
+  }, [])
   const shells = useShellProfiles()
   const [editing, setEditing] = useState<WorkspaceInput | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -120,6 +140,7 @@ export const WorkspacePanel = ({
         onEdit={(id) => void startEdit(id)}
         onDelete={(id) => void workspaces.remove(id)}
         onCreate={createDraft}
+        onCreateShortcut={(id) => void createShortcut(id)}
       />
 
       {editing && (

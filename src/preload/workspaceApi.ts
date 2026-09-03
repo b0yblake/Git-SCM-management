@@ -1,6 +1,12 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, type IpcRendererEvent } from 'electron'
+import type { Unsubscribe } from '@shared/contracts/events'
 import { IPC, type IpcError } from '@shared/contracts/ipc'
-import type { Workspace, WorkspaceInput, WorkspaceSummary } from '@shared/contracts/workspace'
+import type {
+  Workspace,
+  WorkspaceInput,
+  WorkspaceOpenRequestEvent,
+  WorkspaceSummary
+} from '@shared/contracts/workspace'
 import type { Result } from '@shared/domain/result'
 import type { WorkspaceApi } from './api'
 
@@ -15,5 +21,21 @@ export const workspaceApi: WorkspaceApi = {
 
   save: (input: WorkspaceInput) => invoke<Workspace>(IPC.workspace.save, input),
 
-  delete: (id: string) => invoke<null>(IPC.workspace.delete, { id })
+  delete: (id: string) => invoke<null>(IPC.workspace.delete, { id }),
+
+  // Phase 19 — only the workspace id crosses; the save dialog owns the path.
+  createShortcut: (workspaceId: string) =>
+    invoke<{ path: string } | null>(IPC.workspace.shortcut, { workspaceId }),
+
+  pendingOpenWorkspace: () => invoke<string | null>(IPC.workspace.pendingOpen, undefined),
+
+  onOpenWorkspace: (callback: (event: WorkspaceOpenRequestEvent) => void): Unsubscribe => {
+    const listener = (_event: IpcRendererEvent, payload: WorkspaceOpenRequestEvent): void => {
+      callback(payload)
+    }
+    ipcRenderer.on(IPC.workspace.open, listener)
+    return () => {
+      ipcRenderer.off(IPC.workspace.open, listener)
+    }
+  }
 }

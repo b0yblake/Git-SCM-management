@@ -17,6 +17,11 @@ import type { TerminalDefinition } from './terminal'
 
 export const WORKSPACE_VERSION = 1
 
+/** Phase 19 — a workspace id forwarded by a shortcut into the live window. */
+export interface WorkspaceOpenRequestEvent {
+  readonly workspaceId: string
+}
+
 export const WORKSPACE_ID_PREFIX = 'ws'
 
 export const isWorkspaceId = (value: unknown): value is string =>

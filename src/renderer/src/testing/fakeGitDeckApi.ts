@@ -65,6 +65,8 @@ export interface FakeGitDeckApi {
     storageDataFolder: number
     storageChooseDataFolder: number
     pendingOpenPath: number
+    createShortcut: string[]
+    pendingOpenWorkspace: number
   }
   /** What the fake has persisted — survives an `install()`/`uninstall()` cycle. */
   storedSettings(): AppSettings
@@ -100,6 +102,12 @@ export interface FakeGitDeckApi {
   setPendingOpenPath(path: string | null): void
   /** Fires a second-instance open-path push. */
   emitOpenPath(path: string): void
+  /** What `workspace.createShortcut` answers; null = dialog cancelled. */
+  setCreateShortcutResult(result: { path: string } | null): void
+  /** What `workspace.pendingOpenWorkspace` answers, once. */
+  setPendingOpenWorkspace(workspaceId: string | null): void
+  /** Fires a second-instance open-workspace push. */
+  emitOpenWorkspace(workspaceId: string): void
   /**
    * Simulates Main falling back when a saved directory is gone: a create for
    * this path succeeds, but comes back seated in `FAKE_FALLBACK_CWD`.
@@ -142,15 +150,20 @@ export const emptyCalls = (): FakeGitDeckApi['calls'] => ({
   updatesOpenRelease: 0,
   storageDataFolder: 0,
   storageChooseDataFolder: 0,
-  pendingOpenPath: 0
+  pendingOpenPath: 0,
+  createShortcut: [],
+  pendingOpenWorkspace: 0
 })
 
 export const createFakeGitDeckApi = (): FakeGitDeckApi => {
   const dataListeners = new Set<(event: TerminalDataEvent) => void>()
   const exitListeners = new Set<(event: TerminalExitEvent) => void>()
   const openPathListeners = new Set<(event: TerminalOpenPathEvent) => void>()
+  const openWorkspaceListeners = new Set<(event: { workspaceId: string }) => void>()
   const portsOpenListeners = new Set<() => void>()
   let pendingOpenPath: string | null = null
+  let pendingOpenWorkspace: string | null = null
+  let createShortcutResult: { path: string } | null = { path: 'C:\\fake\\Workspace.lnk' }
 
   const calls = emptyCalls()
 
@@ -314,6 +327,25 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       calls.workspaceDelete.push(id)
       workspaces.delete(id)
       return Promise.resolve({ ok: true, value: null })
+    },
+
+    createShortcut: (workspaceId) => {
+      calls.createShortcut.push(workspaceId)
+      return Promise.resolve({ ok: true as const, value: createShortcutResult })
+    },
+
+    pendingOpenWorkspace: () => {
+      calls.pendingOpenWorkspace += 1
+      const workspaceId = pendingOpenWorkspace
+      pendingOpenWorkspace = null
+      return Promise.resolve({ ok: true as const, value: workspaceId })
+    },
+
+    onOpenWorkspace: (callback) => {
+      openWorkspaceListeners.add(callback)
+      return () => {
+        openWorkspaceListeners.delete(callback)
+      }
     }
   }
 
@@ -471,6 +503,15 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     emitOpenPath: (path) => {
       for (const listener of [...openPathListeners]) listener({ path })
     },
+    setCreateShortcutResult: (result) => {
+      createShortcutResult = result
+    },
+    setPendingOpenWorkspace: (workspaceId) => {
+      pendingOpenWorkspace = workspaceId
+    },
+    emitOpenWorkspace: (workspaceId) => {
+      for (const listener of [...openWorkspaceListeners]) listener({ workspaceId })
+    },
     markDirectoryMissing: (path) => {
       missingDirectories.add(path)
     },
@@ -478,6 +519,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       dataListeners.size +
       exitListeners.size +
       openPathListeners.size +
+      openWorkspaceListeners.size +
       portsOpenListeners.size +
       updateAvailableListeners.size,
     emitData: (event) => {
@@ -505,6 +547,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       dataListeners.clear()
       exitListeners.clear()
       openPathListeners.clear()
+      openWorkspaceListeners.clear()
       portsOpenListeners.clear()
       updateAvailableListeners.clear()
       Reflect.deleteProperty(window, 'gitdeck')

@@ -15,9 +15,10 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   const container = createContainer()
 
-  // The cold-start half of --open-path: queued now,
+  // The cold-start half of --open-path / --open-workspace: queued now,
   // pulled by the renderer once session restore has settled.
   container.openPath.accept(process.argv)
+  container.workspaceLaunch.accept(process.argv)
 
   app.on('second-instance', (_event, argv) => {
     const window = BrowserWindow.getAllWindows()[0]
@@ -27,6 +28,8 @@ if (!app.requestSingleInstanceLock()) {
     }
     const path = container.openPath.accept(argv)
     if (path) electronBroadcaster.send(IPC.terminal.openPath, { path })
+    const workspaceId = container.workspaceLaunch.accept(argv)
+    if (workspaceId) electronBroadcaster.send(IPC.workspace.open, { workspaceId })
   })
 
   void app.whenReady().then(() => {

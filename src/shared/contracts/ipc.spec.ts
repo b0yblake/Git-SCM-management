@@ -50,7 +50,16 @@ describe('channel registry', () => {
   })
 
   it('the workspace namespace holds exactly the documented channels', () => {
-    expect(Object.keys(IPC.workspace).sort()).toEqual(['delete', 'get', 'list', 'save'])
+    // shortcut/pendingOpen/open joined in Phase 19 for workspace shortcuts.
+    expect(Object.keys(IPC.workspace).sort()).toEqual([
+      'delete',
+      'get',
+      'list',
+      'open',
+      'pendingOpen',
+      'save',
+      'shortcut'
+    ])
   })
 
   it('the git namespace holds exactly inspect — it is read-only', () => {

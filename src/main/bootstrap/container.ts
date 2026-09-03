@@ -24,6 +24,7 @@ import {
 } from './dataRoot'
 import { consoleSink, createLogger, type Logger } from './logger'
 import { createOpenPathService, type OpenPathService } from './openPath'
+import { createWorkspaceLaunchService, type WorkspaceLaunchService } from './workspaceLaunch'
 import { patchManifest, readManifestTimestamp, recordRun } from './storageManifest'
 import { createStoragePaths } from './storagePaths'
 
@@ -54,6 +55,8 @@ export interface AppContainer {
   }
   /** The Explorer "--open-path" argument queue (Phase 18). */
   readonly openPath: OpenPathService
+  /** The shortcut "--open-workspace" argument queue (Phase 19). */
+  readonly workspaceLaunch: WorkspaceLaunchService
 }
 
 /**
@@ -137,6 +140,17 @@ export const createContainer = (): AppContainer => {
         writeDataRootPointer(resolution.pointerFile, resolution.defaultRoot, target)
       }
     },
-    openPath: createOpenPathService({ logger })
+    openPath: createOpenPathService({ logger }),
+    workspaceLaunch: createWorkspaceLaunchService({
+      logger,
+      workspaceExists: (id) => {
+        try {
+          workspace.get(id)
+          return true
+        } catch {
+          return false
+        }
+      }
+    })
   }
 }

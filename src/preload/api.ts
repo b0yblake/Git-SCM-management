@@ -10,7 +10,12 @@ import type {
 } from '@shared/contracts/ports'
 import type { DataFolderInfo } from '@shared/contracts/storage'
 import type { UpdateCheckResult } from '@shared/contracts/updates'
-import type { Workspace, WorkspaceInput, WorkspaceSummary } from '@shared/contracts/workspace'
+import type {
+  Workspace,
+  WorkspaceInput,
+  WorkspaceOpenRequestEvent,
+  WorkspaceSummary
+} from '@shared/contracts/workspace'
 import type {
   AvailableShellProfile,
   TerminalCreateRequest,
@@ -79,6 +84,15 @@ export interface WorkspaceApi {
   get(id: string): Promise<Result<Workspace, IpcError>>
   save(input: WorkspaceInput): Promise<Result<Workspace, IpcError>>
   delete(id: string): Promise<Result<null, IpcError>>
+  /**
+   * Phase 19 — workspace shortcuts. `createShortcut` sends only the id; the
+   * native save dialog in Main owns the destination path, and null means it
+   * was cancelled. The pull answers the shortcut-launch id exactly once;
+   * the push arrives when a second instance forwards one.
+   */
+  createShortcut(workspaceId: string): Promise<Result<{ path: string } | null, IpcError>>
+  pendingOpenWorkspace(): Promise<Result<string | null, IpcError>>
+  onOpenWorkspace(callback: (event: WorkspaceOpenRequestEvent) => void): Unsubscribe
 }
 
 /**

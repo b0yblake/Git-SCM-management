@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { WorkspaceSummary } from '@shared/contracts/workspace'
 import type { OpenNotice } from '../store/workspaceStore'
 
@@ -12,6 +13,15 @@ export interface WorkspaceSidebarProps {
   readonly onEdit: (workspaceId: string) => void
   readonly onDelete: (workspaceId: string) => void
   readonly onCreate: () => void
+  /** Phase 19 — the right-click menu's one command. */
+  readonly onCreateShortcut?: (workspaceId: string) => void
+}
+
+interface WorkspaceMenuAt {
+  readonly x: number
+  readonly y: number
+  readonly workspaceId: string
+  readonly name: string
 }
 
 /**
@@ -28,8 +38,12 @@ export const WorkspaceSidebar = ({
   onOpen,
   onEdit,
   onDelete,
-  onCreate
-}: WorkspaceSidebarProps): React.JSX.Element => (
+  onCreate,
+  onCreateShortcut
+}: WorkspaceSidebarProps): React.JSX.Element => {
+  const [menuAt, setMenuAt] = useState<WorkspaceMenuAt | null>(null)
+
+  return (
   <nav className="workspace-sidebar" aria-label="Workspaces">
     <div className="workspace-sidebar__header">
       <h2>Workspaces</h2>
@@ -63,6 +77,15 @@ export const WorkspaceSidebar = ({
                   ? 'workspace-sidebar__item workspace-sidebar__item--active'
                   : 'workspace-sidebar__item'
               }
+              onContextMenu={(event) => {
+                event.preventDefault()
+                setMenuAt({
+                  x: event.clientX,
+                  y: event.clientY,
+                  workspaceId: workspace.id,
+                  name: workspace.name
+                })
+              }}
             >
               <button
                 type="button"
@@ -120,5 +143,31 @@ export const WorkspaceSidebar = ({
         ))}
       </ul>
     )}
+
+    {menuAt && (
+      <div className="context-menu-backdrop" onMouseDown={() => setMenuAt(null)}>
+        <menu
+          className="context-menu"
+          role="menu"
+          style={{ left: menuAt.x, top: menuAt.y }}
+          aria-label={`${menuAt.name} actions`}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <li role="none">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuAt(null)
+                onCreateShortcut?.(menuAt.workspaceId)
+              }}
+            >
+              Create shortcut…
+            </button>
+          </li>
+        </menu>
+      </div>
+    )}
   </nav>
-)
+  )
+}
