@@ -7,13 +7,15 @@ export interface TerminalPaneProps {
   readonly shellLabel: string
   readonly isActive: boolean
   readonly isVisible: boolean
+  /** True while this pane fills the canvas alone, in Focus mode. */
+  readonly isMaximized: boolean
   readonly fontSize: number
   readonly cursorBlink: boolean
   readonly onActivate: () => void
   readonly onRename: () => void
   readonly onDuplicate: () => void
   readonly onPark: () => void
-  readonly onMaximize: () => void
+  readonly onToggleMaximize: () => void
   readonly onClose: () => void
 }
 
@@ -23,13 +25,14 @@ export const TerminalPane = ({
   shellLabel,
   isActive,
   isVisible,
+  isMaximized,
   fontSize,
   cursorBlink,
   onActivate,
   onRename,
   onDuplicate,
   onPark,
-  onMaximize,
+  onToggleMaximize,
   onClose
 }: TerminalPaneProps): React.JSX.Element => (
   <section
@@ -62,11 +65,16 @@ export const TerminalPane = ({
         </button>
         <button
           type="button"
-          aria-label={`Focus ${session.definition.title}`}
-          title="Focus pane"
-          onClick={onMaximize}
+          aria-label={
+            isMaximized
+              ? `Restore ${session.definition.title}`
+              : `Focus ${session.definition.title}`
+          }
+          title={isMaximized ? 'Restore layout' : 'Focus pane'}
+          aria-pressed={isMaximized}
+          onClick={onToggleMaximize}
         >
-          ↗
+          {isMaximized ? '↙' : '↗'}
         </button>
         <button
           type="button"

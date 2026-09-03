@@ -1,11 +1,12 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog'
 import { useAppSettings } from '../../settings/public'
+import { computeGridTemplate } from '../model/gridLayout'
 import { useOpenPath } from '../hooks/useOpenPath'
 import { useShellProfiles } from '../hooks/useShellProfiles'
 import { useTerminalShortcuts } from '../hooks/useTerminalShortcuts'
 import { useTerminalSessions } from '../hooks/useTerminalSessions'
-import { useTerminalStore } from '../store/terminalStore'
+import { TERMINAL_LAYOUT_CAPACITY, useTerminalStore } from '../store/terminalStore'
 import { TerminalLayoutToolbar } from './TerminalLayoutToolbar'
 import { TerminalNavigator } from './TerminalNavigator'
 import { TerminalPane } from './TerminalPane'
@@ -29,6 +30,7 @@ export const TerminalDeck = ({ openPathReady = true }: TerminalDeckProps = {}): 
   const activeSessionId = useTerminalStore((state) => state.activeSessionId)
   const visibleSessionIds = useTerminalStore((state) => state.visibleSessionIds)
   const layoutMode = useTerminalStore((state) => state.layoutMode)
+  const lastExpandedLayoutMode = useTerminalStore((state) => state.lastExpandedLayoutMode)
   const setActive = useTerminalStore((state) => state.setActive)
   const hideSession = useTerminalStore((state) => state.hideSession)
   const setLayoutMode = useTerminalStore((state) => state.setLayoutMode)
@@ -54,6 +56,46 @@ export const TerminalDeck = ({ openPathReady = true }: TerminalDeckProps = {}): 
     return session ? [session] : []
   })
   const shellLabels = new Map(shells.profiles.map((profile) => [profile.id, profile.label]))
+
+  // Phase 20 — exactly one inviting slot in the next empty pane. Focus has no
+  // empty pane worth inviting into, and the zero/all-parked states already
+  // carry their own action, so the placeholder stays out of their way.
+  // Grid's capacity is Infinity (Phase 21), which makes the slot its
+  // permanent last cell.
+  const showAddSlot =
+    layoutMode !== 'focus' &&
+    visibleSessionIds.length > 0 &&
+    visibleSessionIds.length < TERMINAL_LAYOUT_CAPACITY[layoutMode]
+
+  // Phase 21 — the elastic Grid lattice follows the measured canvas, so
+  // every terminal shares the one page in near-16:9 cells.
+  const canvasRef = useRef<HTMLDivElement | null>(null)
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const measure = (): void => {
+      const rect = canvas.getBoundingClientRect()
+      setCanvasSize((size) =>
+        size.width === rect.width && size.height === rect.height
+          ? size
+          : { width: rect.width, height: rect.height }
+      )
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(canvas)
+    measure()
+    return () => observer.disconnect()
+  }, [])
+
+  const gridTemplate =
+    layoutMode === 'grid' && visibleSessionIds.length > 0
+      ? computeGridTemplate(
+          visibleSessionIds.length + (showAddSlot ? 1 : 0),
+          canvasSize.width,
+          canvasSize.height
+        )
+      : null
 
   return (
     <div className="terminal-deck">
@@ -83,7 +125,18 @@ export const TerminalDeck = ({ openPathReady = true }: TerminalDeckProps = {}): 
           onChange={setLayoutMode}
         />
 
-        <div className={`terminal-mosaic__canvas terminal-mosaic__canvas--${layoutMode}`}>
+        <div
+          ref={canvasRef}
+          className={`terminal-mosaic__canvas terminal-mosaic__canvas--${layoutMode}`}
+          style={
+            gridTemplate
+              ? {
+                  gridTemplateColumns: `repeat(${gridTemplate.columns}, minmax(0, 1fr))`,
+                  gridTemplateRows: `repeat(${gridTemplate.rows}, minmax(0, 1fr))`
+                }
+              : undefined
+          }
+        >
           {terminals.length === 0 && (
             <div className="terminal-mosaic__empty" role="status">
               <strong>
@@ -130,21 +183,45 @@ export const TerminalDeck = ({ openPathReady = true }: TerminalDeckProps = {}): 
                   }
                   isActive={session.id === activeSessionId}
                   isVisible={isVisible}
+                  isMaximized={layoutMode === 'focus'}
                   fontSize={settings.terminalFontSize}
                   cursorBlink={settings.terminalCursorBlink}
                   onActivate={() => setActive(session.id)}
                   onRename={() => setRenameRequestId(session.id)}
                   onDuplicate={() => void controller.duplicateTerminal(session.id)}
                   onPark={() => hideSession(session.id)}
-                  onMaximize={() => {
+                  onToggleMaximize={() => {
+                    if (layoutMode === 'focus') {
+                      setLayoutMode(lastExpandedLayoutMode)
+                      return
+                    }
                     setActive(session.id)
-                    useTerminalStore.getState().setLayoutMode('focus')
+                    setLayoutMode('focus')
                   }}
                   onClose={() => void controller.closeTerminal(session.id)}
                 />
               </div>
             )
           })}
+
+          {showAddSlot && (
+            <div
+              className="terminal-mosaic__slot terminal-mosaic__slot--add"
+              style={{ order: visibleSessionIds.length }}
+            >
+              <button
+                type="button"
+                className="terminal-mosaic__add"
+                disabled={controller.isOpening}
+                onClick={() => void controller.openTerminal()}
+              >
+                <span className="terminal-mosaic__add-icon" aria-hidden="true">
+                  +
+                </span>
+                Add new Terminal
+              </button>
+            </div>
+          )}
         </div>
       </main>
 

@@ -20,13 +20,13 @@ beforeEach(() => {
 })
 
 describe('Mosaic defaults and session creation', () => {
-  it('starts in the four-pane Grid layout', () => {
+  it('starts in the unbounded Grid layout', () => {
     expect(store().layoutMode).toBe('grid')
-    expect(TERMINAL_LAYOUT_CAPACITY[store().layoutMode]).toBe(4)
+    expect(TERMINAL_LAYOUT_CAPACITY[store().layoutMode]).toBe(Number.POSITIVE_INFINITY)
     expect(store().visibleSessionIds).toEqual([])
   })
 
-  it('fills four panes in creation order', () => {
+  it('fills panes in creation order', () => {
     seed('a', 'b', 'c', 'd')
 
     expect(store().order).toEqual(['a', 'b', 'c', 'd'])
@@ -34,12 +34,11 @@ describe('Mosaic defaults and session creation', () => {
     expect(store().activeSessionId).toBe('d')
   })
 
-  it('puts a fifth session in the focused pane without closing the parked one', () => {
+  it('keeps a fifth session on the Grid canvas — nothing is evicted (Phase 21)', () => {
     seed('a', 'b', 'c', 'd', 'e')
 
     expect(store().order).toEqual(['a', 'b', 'c', 'd', 'e'])
-    expect(store().visibleSessionIds).toEqual(['a', 'b', 'c', 'e'])
-    expect(store().sessions['d']).toBeDefined()
+    expect(store().visibleSessionIds).toEqual(['a', 'b', 'c', 'd', 'e'])
     expect(store().activeSessionId).toBe('e')
   })
 
@@ -64,6 +63,25 @@ describe('layout presets', () => {
     expect(store().activeSessionId).toBe('c')
   })
 
+  it('remembers the mode Focus was entered from, so restoring returns there', () => {
+    store().setLayoutMode('columns')
+    store().setLayoutMode('focus')
+
+    expect(store().lastExpandedLayoutMode).toBe('columns')
+
+    store().setLayoutMode(store().lastExpandedLayoutMode)
+    expect(store().layoutMode).toBe('columns')
+  })
+
+  it('never records Focus as the mode to restore to', () => {
+    store().setLayoutMode('focus')
+    expect(store().lastExpandedLayoutMode).toBe('grid')
+
+    store().setLayoutMode('main-side')
+    store().setLayoutMode('focus')
+    expect(store().lastExpandedLayoutMode).toBe('main-side')
+  })
+
   it('fills newly available panes when expanding again', () => {
     store().setActive('c')
     store().setLayoutMode('focus')
@@ -73,7 +91,7 @@ describe('layout presets', () => {
     expect(store().activeSessionId).toBe('c')
   })
 
-  it('obeys every preset capacity', () => {
+  it('obeys every preset capacity, and Grid takes everything', () => {
     store().setLayoutMode('focus')
     expect(store().visibleSessionIds).toHaveLength(1)
     store().setLayoutMode('columns')
@@ -82,17 +100,34 @@ describe('layout presets', () => {
     expect(store().visibleSessionIds).toHaveLength(3)
     store().setLayoutMode('grid')
     expect(store().visibleSessionIds).toHaveLength(4)
+
+    seed('e', 'f')
+    expect(store().visibleSessionIds).toHaveLength(6)
   })
 })
 
 describe('focus, parking, and closing', () => {
-  it('shows a parked session in the focused pane without reordering sessions', () => {
+  it('shows a parked session in the focused pane of a bounded preset', () => {
     seed('a', 'b', 'c', 'd', 'e')
+    store().setLayoutMode('columns')
+    expect(store().visibleSessionIds).toEqual(['a', 'e'])
+
     store().setActive('d')
 
     expect(store().order).toEqual(['a', 'b', 'c', 'd', 'e'])
-    expect(store().visibleSessionIds).toEqual(['a', 'b', 'c', 'd'])
+    expect(store().visibleSessionIds).toEqual(['a', 'd'])
     expect(store().activeSessionId).toBe('d')
+  })
+
+  it('re-shows a parked session in Grid by appending, never replacing', () => {
+    seed('a', 'b', 'c', 'd', 'e')
+    store().hideSession('c')
+    expect(store().visibleSessionIds).toEqual(['a', 'b', 'd', 'e'])
+
+    store().setActive('c')
+
+    expect(store().visibleSessionIds).toEqual(['a', 'b', 'd', 'e', 'c'])
+    expect(store().activeSessionId).toBe('c')
   })
 
   it('parking removes only the canvas assignment', () => {
@@ -116,19 +151,39 @@ describe('focus, parking, and closing', () => {
     expect(store().activeSessionId).toBe('a')
   })
 
-  it('closing a focused terminal selects a safe neighbour and fills the canvas', () => {
+  it('closing a focused terminal selects a safe neighbour', () => {
     seed('a', 'b', 'c', 'd', 'e')
     store().setActive('b')
     store().removeSession('b')
 
     expect(store().order).toEqual(['a', 'c', 'd', 'e'])
     expect(store().activeSessionId).toBe('c')
-    expect(store().visibleSessionIds).toEqual(['a', 'c', 'e', 'd'])
-    expect(store().visibleSessionIds).toContain(store().activeSessionId)
+    expect(store().visibleSessionIds).toEqual(['a', 'c', 'd', 'e'])
+  })
+
+  it('closing in a bounded preset backfills the freed pane', () => {
+    seed('a', 'b', 'c')
+    store().setLayoutMode('columns')
+    expect(store().visibleSessionIds).toEqual(['a', 'c'])
+
+    store().removeSession('c')
+
+    expect(store().visibleSessionIds).toEqual(['a', 'b'])
+    expect(store().activeSessionId).toBe('b')
+  })
+
+  it('closing in Grid never resurrects a parked terminal (Phase 21)', () => {
+    seed('a', 'b', 'c', 'd', 'e')
+    store().hideSession('b')
+    store().removeSession('e')
+
+    expect(store().visibleSessionIds).toEqual(['a', 'c', 'd'])
+    expect(store().sessions['b']).toBeDefined()
   })
 
   it('closing a parked terminal leaves visible panes unchanged', () => {
     seed('a', 'b', 'c', 'd', 'e')
+    store().hideSession('d')
     const before = [...store().visibleSessionIds]
     store().removeSession('d')
 

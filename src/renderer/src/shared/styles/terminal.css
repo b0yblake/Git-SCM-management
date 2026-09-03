@@ -439,6 +439,8 @@
   grid-template: minmax(0, 1fr) / repeat(2, minmax(0, 1fr));
 }
 
+/* Grid's template is set inline from the measured canvas (Phase 21);
+   this 2×2 stands as its unmeasured fallback and as main-side's base. */
 .terminal-mosaic__canvas--main-side,
 .terminal-mosaic__canvas--grid {
   grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr));
@@ -454,6 +456,40 @@
   max-width: 100%;
   min-width: 0;
   min-height: 0;
+}
+
+/* Phase 20 — the one inviting slot in the next empty pane. */
+.terminal-mosaic__add {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 0;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-faint);
+  font-size: var(--font-small);
+  cursor: pointer;
+}
+
+.terminal-mosaic__add:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface-selected);
+  color: var(--accent-strong);
+}
+
+.terminal-mosaic__add:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.terminal-mosaic__add-icon {
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .terminal-mosaic__empty {

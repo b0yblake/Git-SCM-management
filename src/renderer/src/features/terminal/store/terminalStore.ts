@@ -5,11 +5,16 @@ export const TERMINAL_LAYOUT_MODES = ['focus', 'columns', 'main-side', 'grid'] a
 
 export type TerminalLayoutMode = (typeof TERMINAL_LAYOUT_MODES)[number]
 
+/**
+ * Grid is unbounded (Phase 21): every session stays on the one-page
+ * canvas and the lattice re-balances instead of parking anything. The
+ * other presets keep their fixed pane counts.
+ */
 export const TERMINAL_LAYOUT_CAPACITY: Readonly<Record<TerminalLayoutMode, number>> = {
   focus: 1,
   columns: 2,
   'main-side': 3,
-  grid: 4
+  grid: Number.POSITIVE_INFINITY
 }
 
 /**
@@ -24,6 +29,8 @@ export interface TerminalUiState {
   /** Sessions currently assigned to the canvas, in pane order. */
   readonly visibleSessionIds: string[]
   readonly layoutMode: TerminalLayoutMode
+  /** The multi-pane mode a maximized pane returns to. Never 'focus'. */
+  readonly lastExpandedLayoutMode: TerminalLayoutMode
 }
 
 export interface TerminalStore extends TerminalUiState {
@@ -44,7 +51,8 @@ const EMPTY: TerminalUiState = {
   order: [],
   activeSessionId: null,
   visibleSessionIds: [],
-  layoutMode: 'grid'
+  layoutMode: 'grid',
+  lastExpandedLayoutMode: 'grid'
 }
 
 const neighbourOf = (order: string[], removedIndex: number): string | null =>
@@ -128,7 +136,11 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
       let visibleSessionIds = state.visibleSessionIds.filter((id) => id !== sessionId)
 
       visibleSessionIds = keepActiveVisible(visibleSessionIds, activeSessionId, sessions, capacity)
-      visibleSessionIds = fillVisible(visibleSessionIds, order, sessions, capacity)
+      // Backfilling replaces what the closed terminal freed. An unbounded
+      // Grid frees nothing, so a close must not resurrect parked sessions.
+      if (Number.isFinite(capacity)) {
+        visibleSessionIds = fillVisible(visibleSessionIds, order, sessions, capacity)
+      }
 
       return { sessions, order, activeSessionId, visibleSessionIds }
     }),
@@ -185,8 +197,11 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
         preferredActive && visibleSessionIds.includes(preferredActive)
           ? preferredActive
           : (visibleSessionIds[0] ?? null)
+      // Entering Focus remembers the mode being left, so un-maximizing
+      // returns there instead of always snapping back to Grid.
+      const lastExpandedLayoutMode = layoutMode === 'focus' ? state.layoutMode : layoutMode
 
-      return { layoutMode, visibleSessionIds, activeSessionId }
+      return { layoutMode, lastExpandedLayoutMode, visibleSessionIds, activeSessionId }
     }),
 
   renameSession: (sessionId, title) =>

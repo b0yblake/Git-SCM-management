@@ -210,7 +210,11 @@ export const TerminalNavigator = ({
 
       <footer className="terminal-navigator__footer">
         <span>{visibleIds.length} visible</span>
-        <span>{TERMINAL_LAYOUT_CAPACITY[layoutMode]} pane capacity</span>
+        <span>
+          {Number.isFinite(TERMINAL_LAYOUT_CAPACITY[layoutMode])
+            ? `${TERMINAL_LAYOUT_CAPACITY[layoutMode]} pane capacity`
+            : 'Unlimited panes'}
+        </span>
       </footer>
     </aside>
   )

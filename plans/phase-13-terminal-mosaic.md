@@ -51,7 +51,7 @@ instance remain alive.
 | Focus | 1 | One terminal fills the canvas |
 | Columns | 2 | Two equal vertical panes |
 | Main + Side | 3 | Large pane left, two stacked panes right |
-| Grid | 4 | Responsive 2×2 mosaic; default |
+| Grid | 4 | Responsive 2×2 mosaic; default. *Superseded by Phase 21: capacity is now unbounded and the lattice re-balances.* |
 
 Changing mode keeps the focused terminal visible, preserves existing pane order where
 possible, and fills newly available slots from running-session order.
@@ -77,6 +77,8 @@ possible, and fills newly available slots from running-session order.
 
 - Compact toolbar with four layout presets and visible count.
 - Pane header with status, title, shell, CWD, duplicate, park, focus, and close actions.
+  *(2026-09-03: the focus action is a toggle — ↗ maximizes, ↙ restores the layout
+  Focus was entered from, tracked by `lastExpandedLayoutMode`.)*
 - Focus shown by a thin accent border.
 - Every TerminalView remains mounted; non-visible panes are CSS-hidden.
 - Newly visible TerminalViews re-fit even when they are not focused.
