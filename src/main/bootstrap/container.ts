@@ -23,6 +23,7 @@ import {
   type DataRootResolution
 } from './dataRoot'
 import { consoleSink, createLogger, type Logger } from './logger'
+import { createOpenPathService, type OpenPathService } from './openPath'
 import { patchManifest, readManifestTimestamp, recordRun } from './storageManifest'
 import { createStoragePaths } from './storagePaths'
 
@@ -51,6 +52,8 @@ export interface AppContainer {
     /** Copies current data to the target and records the pointer. Throws. */
     readonly applySwitch: (target: string) => void
   }
+  /** The Explorer "--open-path" argument queue (Phase 18). */
+  readonly openPath: OpenPathService
 }
 
 /**
@@ -74,10 +77,7 @@ export const createContainer = (): AppContainer => {
   // The log path depends only on logsDir, so the logger can exist before the
   // data root is known — and the resolver below can log through it.
   const logger = createLogger(
-    combineSinks(
-      consoleSink,
-      createFileSink({ filePath: createStoragePaths(defaultRoot, logsDir).logFile })
-    )
+    combineSinks(consoleSink, createFileSink({ filePath: createStoragePaths(defaultRoot, logsDir).logFile }))
   )
 
   // The user may have pointed data at another folder (Phase 17); everything
@@ -136,6 +136,7 @@ export const createContainer = (): AppContainer => {
         copyDataToNewRoot(paths, target, logger)
         writeDataRootPointer(resolution.pointerFile, resolution.defaultRoot, target)
       }
-    }
+    },
+    openPath: createOpenPathService({ logger })
   }
 }

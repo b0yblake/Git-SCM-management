@@ -12,6 +12,8 @@ export interface PendingClose {
 
 export interface TerminalSessionsController {
   readonly openTerminal: (shellProfileId?: ShellProfileId) => Promise<void>
+  /** Phase 18 — a terminal at a specific directory, titled after it. */
+  readonly openTerminalAt: (cwd: string, title?: string) => Promise<void>
   /** Duplicating reuses an existing session's definition — no new IPC channel. */
   readonly duplicateTerminal: (sessionId: string) => Promise<void>
   /** May open a confirmation instead of closing, depending on settings. */
@@ -80,6 +82,11 @@ export const useTerminalSessions = ({
   const openTerminal = useCallback(
     (shellProfileId?: ShellProfileId) =>
       create(shellProfileId === undefined ? {} : { shellProfileId }),
+    [create]
+  )
+
+  const openTerminalAt = useCallback(
+    (cwd: string, title?: string) => create(title === undefined ? { cwd } : { cwd, title }),
     [create]
   )
 
@@ -170,6 +177,7 @@ export const useTerminalSessions = ({
   return useMemo(
     () => ({
       openTerminal,
+      openTerminalAt,
       duplicateTerminal,
       closeTerminal,
       closeActiveTerminal,
@@ -183,6 +191,7 @@ export const useTerminalSessions = ({
     }),
     [
       openTerminal,
+      openTerminalAt,
       duplicateTerminal,
       closeTerminal,
       closeActiveTerminal,

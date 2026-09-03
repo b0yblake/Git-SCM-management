@@ -3,7 +3,8 @@ import { DEFAULT_SETTINGS, type AppSettings } from '@shared/contracts/settings'
 import type {
   AvailableShellProfile,
   TerminalDataEvent,
-  TerminalExitEvent
+  TerminalExitEvent,
+  TerminalOpenPathEvent
 } from '@shared/contracts/terminal'
 import type { GitRepositoryStatus } from '@shared/contracts/git'
 import type {
@@ -63,6 +64,7 @@ export interface FakeGitDeckApi {
     updatesOpenRelease: number
     storageDataFolder: number
     storageChooseDataFolder: number
+    pendingOpenPath: number
   }
   /** What the fake has persisted — survives an `install()`/`uninstall()` cycle. */
   storedSettings(): AppSettings
@@ -94,6 +96,10 @@ export interface FakeGitDeckApi {
   setChooseDataFolderResult(result: DataFolderInfo | null): void
   /** Makes `storage.chooseDataFolder` answer with an error. */
   failChooseDataFolder(message: string): void
+  /** What `terminal.pendingOpenPath` answers, once. Defaults to null. */
+  setPendingOpenPath(path: string | null): void
+  /** Fires a second-instance open-path push. */
+  emitOpenPath(path: string): void
   /**
    * Simulates Main falling back when a saved directory is gone: a create for
    * this path succeeds, but comes back seated in `FAKE_FALLBACK_CWD`.
@@ -135,13 +141,16 @@ export const emptyCalls = (): FakeGitDeckApi['calls'] => ({
   updatesCheck: 0,
   updatesOpenRelease: 0,
   storageDataFolder: 0,
-  storageChooseDataFolder: 0
+  storageChooseDataFolder: 0,
+  pendingOpenPath: 0
 })
 
 export const createFakeGitDeckApi = (): FakeGitDeckApi => {
   const dataListeners = new Set<(event: TerminalDataEvent) => void>()
   const exitListeners = new Set<(event: TerminalExitEvent) => void>()
+  const openPathListeners = new Set<(event: TerminalOpenPathEvent) => void>()
   const portsOpenListeners = new Set<() => void>()
+  let pendingOpenPath: string | null = null
 
   const calls = emptyCalls()
 
@@ -230,6 +239,18 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       exitListeners.add(callback)
       return () => {
         exitListeners.delete(callback)
+      }
+    },
+    pendingOpenPath: () => {
+      calls.pendingOpenPath += 1
+      const path = pendingOpenPath
+      pendingOpenPath = null
+      return Promise.resolve({ ok: true as const, value: path })
+    },
+    onOpenPath: (callback) => {
+      openPathListeners.add(callback)
+      return () => {
+        openPathListeners.delete(callback)
       }
     }
   }
@@ -444,12 +465,19 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     failChooseDataFolder: (message) => {
       chooseDataFolderError = { code: 'INTERNAL_ERROR', message }
     },
+    setPendingOpenPath: (path) => {
+      pendingOpenPath = path
+    },
+    emitOpenPath: (path) => {
+      for (const listener of [...openPathListeners]) listener({ path })
+    },
     markDirectoryMissing: (path) => {
       missingDirectories.add(path)
     },
     listenerCount: () =>
       dataListeners.size +
       exitListeners.size +
+      openPathListeners.size +
       portsOpenListeners.size +
       updateAvailableListeners.size,
     emitData: (event) => {
@@ -476,6 +504,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     uninstall: () => {
       dataListeners.clear()
       exitListeners.clear()
+      openPathListeners.clear()
       portsOpenListeners.clear()
       updateAvailableListeners.clear()
       Reflect.deleteProperty(window, 'gitdeck')

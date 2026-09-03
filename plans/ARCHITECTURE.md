@@ -484,7 +484,7 @@ longer know their own filenames.
 %APPDATA%\GitDeck\data-root.json       pointer to the chosen data root —
                                        ALWAYS in the default userData dir
 
-%LOCALAPPDATA%\GitDeck\logs\           app.getPath('logs')
+%APPDATA%\GitDeck\logs\                app.getPath('logs') — under userData
 └── gitdeck.log                        rotating operational log
 ```
 

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog'
 import { useAppSettings } from '../../settings/public'
+import { useOpenPath } from '../hooks/useOpenPath'
 import { useShellProfiles } from '../hooks/useShellProfiles'
 import { useTerminalShortcuts } from '../hooks/useTerminalShortcuts'
 import { useTerminalSessions } from '../hooks/useTerminalSessions'
@@ -9,11 +10,19 @@ import { TerminalLayoutToolbar } from './TerminalLayoutToolbar'
 import { TerminalNavigator } from './TerminalNavigator'
 import { TerminalPane } from './TerminalPane'
 
+export interface TerminalDeckProps {
+  /**
+   * Explorer open-path requests hold until session restore settles
+   * (Phase 18). Defaults to true so a deck without restore acts immediately.
+   */
+  readonly openPathReady?: boolean
+}
+
 /**
  * Owns the renderer-only Terminal Deck. Every TerminalView stays mounted for
  * its session; layout only changes which pane wrappers are CSS-visible.
  */
-export const TerminalDeck = (): React.JSX.Element => {
+export const TerminalDeck = ({ openPathReady = true }: TerminalDeckProps = {}): React.JSX.Element => {
   const [renameRequestId, setRenameRequestId] = useState<string | null>(null)
   const sessions = useTerminalStore((state) => state.sessions)
   const order = useTerminalStore((state) => state.order)
@@ -32,6 +41,7 @@ export const TerminalDeck = (): React.JSX.Element => {
   })
 
   const { openTerminal, closeActiveTerminal } = controller
+  useOpenPath({ enabled: openPathReady, openAt: controller.openTerminalAt })
   useTerminalShortcuts({
     onCreate: useCallback(() => void openTerminal(), [openTerminal]),
     onCloseActive: useCallback(() => void closeActiveTerminal(), [closeActiveTerminal]),

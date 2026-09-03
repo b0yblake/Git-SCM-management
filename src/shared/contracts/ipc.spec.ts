@@ -29,12 +29,16 @@ describe('channel registry', () => {
   })
 
   it('the terminal namespace holds exactly the documented channels', () => {
-    // 'profiles' joined in Phase 5 so the picker can list installed shells.
+    // 'profiles' joined in Phase 5 so the picker can list installed shells;
+    // the two openPath channels joined in Phase 18 for Explorer's
+    // "Open in GitDeck".
     expect(Object.keys(IPC.terminal).sort()).toEqual([
       'create',
       'data',
       'exit',
       'kill',
+      'openPath',
+      'pendingOpenPath',
       'profiles',
       'resize',
       'write'

@@ -6,6 +6,7 @@ import type {
   TerminalCreateRequest,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalOpenPathEvent,
   TerminalSessionInfo
 } from '@shared/contracts/terminal'
 import type { Result } from '@shared/domain/result'
@@ -47,5 +48,10 @@ export const terminalApi: TerminalApi = {
 
   onData: (callback: (event: TerminalDataEvent) => void) => subscribe(IPC.terminal.data, callback),
 
-  onExit: (callback: (event: TerminalExitEvent) => void) => subscribe(IPC.terminal.exit, callback)
+  onExit: (callback: (event: TerminalExitEvent) => void) => subscribe(IPC.terminal.exit, callback),
+
+  pendingOpenPath: () => invoke<string | null>(IPC.terminal.pendingOpenPath, undefined),
+
+  onOpenPath: (callback: (event: TerminalOpenPathEvent) => void) =>
+    subscribe(IPC.terminal.openPath, callback)
 }

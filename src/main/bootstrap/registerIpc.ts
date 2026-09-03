@@ -8,6 +8,7 @@ import { registerWorkspaceIpc } from '../features/workspace/public'
 import type { AppContainer } from './container'
 import { registerDataRootIpc } from './dataRootIpc'
 import { electronBroadcaster, electronIpcRegistry } from './ipcPorts'
+import { registerOpenPathIpc } from './openPathIpc'
 
 /**
  * Single place where every feature's IPC handlers are registered.
@@ -70,6 +71,11 @@ export const registerIpc = (container: AppContainer): void => {
     },
     applySwitch: container.dataRoot.applySwitch,
     logger: container.logger
+  })
+
+  registerOpenPathIpc({
+    registry: electronIpcRegistry,
+    openPath: container.openPath
   })
 
   container.logger.debug(

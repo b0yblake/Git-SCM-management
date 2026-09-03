@@ -32,6 +32,7 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 | 15 | [phase-15-data-migrations.md](phase-15-data-migrations.md) | Upgrades never strand data: migration engine, backups, golden fixtures | ☑ |
 | 16 | [phase-16-update-check.md](phase-16-update-check.md) | Startup GitHub release check with a dismissible notify-and-link prompt | ☑ |
 | 17 | [phase-17-data-folder.md](phase-17-data-folder.md) | User-chosen data folder via pointer file and native picker, applied on restart | ☑ |
+| 18 | [phase-18-explorer-open.md](phase-18-explorer-open.md) | Shift+right-click a folder in Explorer → open it as a terminal in the running (or launched) GitDeck | ☑ |
 
 > Note on ordering: `PLAN.md` §35 places the architecture checkpoint after Phase 5. It is placed after **Phase 4** here because every item on that checklist is already testable once multi-tab works, and catching a boundary violation before shell detection is written is cheaper. Move it back one row if you prefer to follow §35 literally.
 

@@ -19,7 +19,11 @@ describe('the IPC surface', () => {
         kill: 'terminal:kill',
         profiles: 'terminal:profiles',
         data: 'terminal:data',
-        exit: 'terminal:exit'
+        exit: 'terminal:exit',
+        // Phase 18 — deliberate addition. Explorer's "Open in GitDeck": the
+        // pull for the launch argument and the push from a second instance.
+        pendingOpenPath: 'terminal:pendingpath',
+        openPath: 'terminal:openpath'
       },
       settings: {
         get: 'settings:get',
@@ -58,7 +62,7 @@ describe('the IPC surface', () => {
     })
   })
 
-  it('holds seven namespaces and twenty-two channels', () => {
+  it('holds seven namespaces and twenty-four channels', () => {
     // A count is a second, blunter guard: renaming a channel keeps the count,
     // but adding one cannot.
     const namespaces = Object.keys(IPC)
@@ -73,6 +77,6 @@ describe('the IPC surface', () => {
       'updates',
       'storage'
     ])
-    expect(channels).toHaveLength(22)
+    expect(channels).toHaveLength(24)
   })
 })

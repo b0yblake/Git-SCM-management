@@ -16,6 +16,7 @@ import type {
   TerminalCreateRequest,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalOpenPathEvent,
   TerminalSessionInfo
 } from '@shared/contracts/terminal'
 
@@ -59,6 +60,13 @@ export interface TerminalApi {
   kill(sessionId: string): Promise<Result<null, IpcError>>
   onData(callback: (event: TerminalDataEvent) => void): Unsubscribe
   onExit(callback: (event: TerminalExitEvent) => void): Unsubscribe
+  /**
+   * Phase 18 — Explorer's "Open in GitDeck". The pull answers the validated
+   * launch directory exactly once; the push arrives when a second instance
+   * forwards one. Main validated both; the renderer never sends a path.
+   */
+  pendingOpenPath(): Promise<Result<string | null, IpcError>>
+  onOpenPath(callback: (event: TerminalOpenPathEvent) => void): Unsubscribe
 }
 
 /**

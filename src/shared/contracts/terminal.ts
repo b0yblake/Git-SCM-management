@@ -74,6 +74,11 @@ export interface TerminalDataEvent {
   readonly data: string
 }
 
+/** Phase 18 — a directory forwarded by Explorer's "Open in GitDeck". */
+export interface TerminalOpenPathEvent {
+  readonly path: string
+}
+
 export interface TerminalExitEvent {
   readonly sessionId: string
   readonly exitCode: number

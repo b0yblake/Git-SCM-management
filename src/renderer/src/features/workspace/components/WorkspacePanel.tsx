@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Workspace, WorkspaceInput } from '@shared/contracts/workspace'
 import { createId } from '@shared/domain/ids'
 import { useToastStore } from '../../../shared/store/toastStore'
@@ -12,6 +12,12 @@ import { WorkspaceSidebar } from './WorkspaceSidebar'
 export interface WorkspacePanelProps {
   /** Called after an open/re-open succeeds so the shell can reveal the terminals. */
   readonly onWorkspaceOpened?: () => void
+  /**
+   * Called once when startup restore settles (Phase 18): Explorer open-path
+   * requests hold until then, so a restored terminal at the same path is
+   * focused rather than duplicated.
+   */
+  readonly onRestoreSettled?: () => void
 }
 
 /** Strips what Main owns: a caller never supplies version or timestamps. */
@@ -30,11 +36,19 @@ const toInput = (workspace: Workspace): WorkspaceInput => ({
  * The components below it are presentational; every IPC call happens in the
  * hooks this component uses. Mirrors `TerminalDeck` for the terminal feature.
  */
-export const WorkspacePanel = ({ onWorkspaceOpened }: WorkspacePanelProps): React.JSX.Element => {
+export const WorkspacePanel = ({
+  onWorkspaceOpened,
+  onRestoreSettled
+}: WorkspacePanelProps): React.JSX.Element => {
   const workspaces = useWorkspaces()
   const opener = useOpenWorkspace()
   // Owns what the window shows at launch: a restored workspace, or one shell.
-  useRestoreOnStartup(opener.open)
+  const restore = useRestoreOnStartup(opener.open)
+
+  useEffect(() => {
+    if (restore.status === 'settled') onRestoreSettled?.()
+  }, [restore.status, onRestoreSettled])
+
   const shells = useShellProfiles()
   const [editing, setEditing] = useState<WorkspaceInput | null>(null)
   const [isSaving, setIsSaving] = useState(false)

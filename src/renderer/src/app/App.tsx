@@ -17,16 +17,22 @@ import { ActivityRail, type AppSection } from './ActivityRail'
  */
 export const App = (): React.JSX.Element => {
   const [activeSection, setActiveSection] = useState<AppSection>('terminals')
+  // Explorer open-path requests wait for restore, so a restored terminal at
+  // the same path is focused rather than duplicated (Phase 18).
+  const [restoreSettled, setRestoreSettled] = useState(false)
 
   return (
     <div className="app">
       <main className="app-shell">
         <ActivityRail activeSection={activeSection} onSelect={setActiveSection} />
         <div className="app-shell__content">
-          <TerminalDeck />
+          <TerminalDeck openPathReady={restoreSettled} />
           <aside className="tool-drawer" hidden={activeSection === 'terminals'}>
             <div className="tool-drawer__panel" hidden={activeSection !== 'workspaces'}>
-              <WorkspacePanel onWorkspaceOpened={() => setActiveSection('terminals')} />
+              <WorkspacePanel
+                onWorkspaceOpened={() => setActiveSection('terminals')}
+                onRestoreSettled={() => setRestoreSettled(true)}
+              />
             </div>
             <div className="tool-drawer__panel" hidden={activeSection !== 'settings'}>
               <SettingsPanel />

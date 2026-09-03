@@ -41,3 +41,5 @@ nsis:
   createStartMenuShortcut: true
   # Terminals are real OS processes; the installer must not leave them running.
   runAfterFinish: false
+  # Deletes the HKCU Explorer context-menu keys the app writes (Phase 18).
+  include: build/installer.nsh

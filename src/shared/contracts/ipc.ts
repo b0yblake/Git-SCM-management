@@ -12,7 +12,11 @@ export const IPC = {
     kill: 'terminal:kill',
     profiles: 'terminal:profiles',
     data: 'terminal:data',
-    exit: 'terminal:exit'
+    exit: 'terminal:exit',
+    /** Pull: the validated --open-path directory queued at launch, once. */
+    pendingOpenPath: 'terminal:pendingpath',
+    /** One-way Main → renderer: a second instance forwarded a directory. */
+    openPath: 'terminal:openpath'
   },
 
   settings: {

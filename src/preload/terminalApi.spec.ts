@@ -45,12 +45,15 @@ beforeEach(() => {
 
 describe('bridge shape', () => {
   it('exposes exactly the documented members and no more', () => {
-    // Six from ARCHITECTURE.md §7 plus 'profiles', added in Phase 5.
+    // Six from ARCHITECTURE.md §7 plus 'profiles' (Phase 5) and the two
+    // Explorer open-path members (Phase 18).
     expect(Object.keys(terminalApi).sort()).toEqual([
       'create',
       'kill',
       'onData',
       'onExit',
+      'onOpenPath',
+      'pendingOpenPath',
       'profiles',
       'resize',
       'write'
