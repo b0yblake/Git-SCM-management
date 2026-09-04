@@ -11,13 +11,13 @@ without stopping it, then save the whole setup as a workspace you can reopen
 in one click.
 
 <!-- Keep the release tag, app version, asset name, and hashes in sync. -->
-<a href="https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.exe">
-  <img src="https://img.shields.io/badge/Download-GitDeck%200.5.0%20for%20Windows-1677FF?style=for-the-badge&logo=windows11&logoColor=white" alt="Download GitDeck 0.5.0 for Windows x64" />
+<a href="https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5.2/GitDeck-Setup-0.5.2-x64.exe">
+  <img src="https://img.shields.io/badge/Download-GitDeck%200.5.2%20for%20Windows-1677FF?style=for-the-badge&logo=windows11&logoColor=white" alt="Download GitDeck 0.5.2 for Windows x64" />
 </a>
 
 <br />
 
-[Release page](https://github.com/b0yblake/Git-SCM-management/releases/tag/v0.5)
+[Release page](https://github.com/b0yblake/Git-SCM-management/releases/tag/v0.5.2)
 · [Quick start](#quick-start)
 · [Features](#core-features)
 · [Privacy](#privacy-and-safety)
@@ -26,7 +26,7 @@ in one click.
 ![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%2F11%20x64-0078D6)
 ![Local first](https://img.shields.io/badge/local--first-no%20account-2EA44F)
 ![No telemetry](https://img.shields.io/badge/telemetry-none-2EA44F)
-![Version](https://img.shields.io/badge/version-0.5.0-555555)
+![Version](https://img.shields.io/badge/version-0.5.2-555555)
 
 <img src="docs/assets/gitdeck-mosaic.png" alt="GitDeck showing three live terminal sessions in the Grid layout" />
 
@@ -62,7 +62,7 @@ normally and can, of course, change a repository.
 
 ### Recommended: EXE installer
 
-1. [Download `GitDeck-Setup-0.5.0-x64.exe`](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.exe).
+1. [Download `GitDeck-Setup-0.5.2-x64.exe`](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5.2/GitDeck-Setup-0.5.2-x64.exe).
 2. Open the downloaded file. Keep the default
    `%LOCALAPPDATA%\Programs\GitDeck` folder or choose another location.
 3. Launch **GitDeck** from the Start menu or desktop shortcut.
@@ -77,11 +77,11 @@ normally and can, of course, change a repository.
 <summary><strong>Managed or silent installation with MSI</strong></summary>
 
 Download
-[`GitDeck-Setup-0.5.0-x64.msi`](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.msi),
+[`GitDeck-Setup-0.5.2-x64.msi`](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5.2/GitDeck-Setup-0.5.2-x64.msi),
 then run:
 
 ```powershell
-msiexec /i .\GitDeck-Setup-0.5.0-x64.msi /qn
+msiexec /i .\GitDeck-Setup-0.5.2-x64.msi /qn
 ```
 
 The MSI wraps the same per-user installer as the EXE. Uninstall GitDeck from
@@ -98,18 +98,18 @@ not `msiexec /x` inventory.
 PowerShell can calculate the SHA-256 digest without installing another tool:
 
 ```powershell
-(Get-FileHash .\GitDeck-Setup-0.5.0-x64.exe -Algorithm SHA256).Hash.ToLower()
+(Get-FileHash .\GitDeck-Setup-0.5.2-x64.exe -Algorithm SHA256).Hash.ToLower()
 ```
 
-Compare the result with the digest published by GitHub for the v0.5 assets:
+Compare the result with the digest published by GitHub for the v0.5.2 assets:
 
 | File | Expected SHA-256 |
 | --- | --- |
-| `GitDeck-Setup-0.5.0-x64.exe` | `691b7fdc672bea5bf77ff2bfb8aea886a6fdcb9b91867949416277d1741f35fd` |
-| `GitDeck-Setup-0.5.0-x64.msi` | `86d674c0a9b31477a52d654f35e41d53b3ed52fe44a80d0b68517ea87c9283ef` |
+| `GitDeck-Setup-0.5.2-x64.exe` | `0a94481576be01d32f357aa7282a4830262140ce89865fec3f9fd7290bef3b1f` |
+| `GitDeck-Setup-0.5.2-x64.msi` | `68d252e47424cddda2fbc7a474f88df75458ed4819a13a4988b5a805794948d6` |
 
 If the values differ, do not run the installer. Delete it and download a new
-copy from the [official release page](https://github.com/b0yblake/Git-SCM-management/releases/tag/v0.5).
+copy from the [official release page](https://github.com/b0yblake/Git-SCM-management/releases/tag/v0.5.2).
 
 </details>
 
@@ -317,7 +317,7 @@ Architecture decisions, test contracts, and implementation history live in
 
 **Spend less time finding terminals. Spend more time using them.**
 
-[Download GitDeck 0.5.0](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5/GitDeck-Setup-0.5.0-x64.exe)
+[Download GitDeck 0.5.2](https://github.com/b0yblake/Git-SCM-management/releases/download/v0.5.2/GitDeck-Setup-0.5.2-x64.exe)
 · [View all releases](https://github.com/b0yblake/Git-SCM-management/releases)
 
 </div>
