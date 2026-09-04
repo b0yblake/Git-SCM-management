@@ -67,7 +67,7 @@ export const TerminalView = ({
   const terminalRef = useRef<Terminal | null>(null)
   const syncSizeRef = useRef<(() => void) | null>(null)
   const disposedRef = useRef(false)
-  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null)
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number; hasSelection: boolean } | null>(null)
 
   const { status, exitCode, sendInput, sendResize } = useTerminalSession({
     sessionId,
@@ -188,9 +188,9 @@ export const TerminalView = ({
   }, [isActive, isVisible])
 
   /**
-   * Copy, Paste and Clear act on the xterm instance, which is why they live
-   * here rather than in the menu: the instance is a ref and never leaves this
-   * component. The other three are the caller's to perform.
+   * Copy, Paste, Paste selection and Clear act on the xterm instance, which is
+   * why they live here rather than in the menu: the instance is a ref and
+   * never leaves this component. The other three are the caller's to perform.
    */
   const runCommand = (command: TerminalMenuCommand): void => {
     const terminal = terminalRef.current
@@ -200,16 +200,24 @@ export const TerminalView = ({
       case 'Copy': {
         const selection = terminal?.getSelection()
         if (selection) void navigator.clipboard?.writeText(selection)
-        return
+        break
       }
       case 'Paste':
         void navigator.clipboard?.readText().then((text) => {
           if (text) sendInput(text)
         })
-        return
+        break
+      case 'Paste selection': {
+        // The highlighted text goes to the shell as typed input — a line of
+        // earlier output becomes the next command with no Copy in between.
+        // Nothing presses Enter; the user still does.
+        const selection = terminal?.getSelection()
+        if (selection) sendInput(selection)
+        break
+      }
       case 'Clear':
         terminal?.clear()
-        return
+        break
       case 'Rename terminal':
         onRename?.()
         return
@@ -218,7 +226,14 @@ export const TerminalView = ({
         return
       case 'Close terminal':
         onClose?.()
+        return
     }
+
+    // The menu took keyboard focus when it opened, and unmounting it drops
+    // focus on the document body. The four commands above leave the terminal
+    // where it was, so the keyboard goes straight back to the shell — without
+    // this, a paste lands and the Enter after it goes nowhere.
+    terminal?.focus()
   }
 
   return (
@@ -226,7 +241,11 @@ export const TerminalView = ({
       className="terminal-view"
       onContextMenu={(event) => {
         event.preventDefault()
-        setMenuAt({ x: event.clientX, y: event.clientY })
+        setMenuAt({
+          x: event.clientX,
+          y: event.clientY,
+          hasSelection: terminalRef.current?.hasSelection() ?? false
+        })
       }}
     >
       <div className="terminal-view__surface" ref={containerRef} data-testid="terminal-surface" />
@@ -239,6 +258,7 @@ export const TerminalView = ({
         <TerminalContextMenu
           x={menuAt.x}
           y={menuAt.y}
+          hasSelection={menuAt.hasSelection}
           onCommand={runCommand}
           onDismiss={() => {
             setMenuAt(null)

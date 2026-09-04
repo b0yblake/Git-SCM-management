@@ -11,8 +11,10 @@ let api: FakeGitDeckApi
 const onCommand = vi.fn()
 const onDismiss = vi.fn()
 
-const show = () =>
-  render(<TerminalContextMenu x={40} y={60} onCommand={onCommand} onDismiss={onDismiss} />)
+const show = (props: { hasSelection?: boolean } = {}) =>
+  render(
+    <TerminalContextMenu x={40} y={60} {...props} onCommand={onCommand} onDismiss={onDismiss} />
+  )
 
 const labels = (): string[] =>
   screen.getAllByRole('menuitem').map((button) => button.textContent ?? '')
@@ -30,12 +32,13 @@ afterEach(() => {
 })
 
 describe('the command list', () => {
-  it('renders exactly the six allowed commands, in order', () => {
+  it('renders exactly the seven allowed commands, in order', () => {
     show()
 
     expect(labels()).toEqual([
       'Copy',
       'Paste',
+      'Paste selection',
       'Clear',
       'Rename terminal',
       'Duplicate terminal',
@@ -44,24 +47,51 @@ describe('the command list', () => {
   })
 
   /**
-   * The assertion that matters: a seventh command would have to be added to
-   * `TERMINAL_MENU_COMMANDS`, and this pins that list to what Phase 10 allows.
+   * The assertion that matters: an eighth command would have to be added to
+   * `TERMINAL_MENU_COMMANDS`, and this pins that list to Phase 10's six plus
+   * the one deliberate addition (Paste selection, 2026-09-04).
    */
-  it('has no seventh command', () => {
+  it('has no eighth command', () => {
     show()
 
-    expect(labels()).toHaveLength(6)
-    expect(TERMINAL_MENU_COMMANDS).toHaveLength(6)
+    expect(labels()).toHaveLength(7)
+    expect(TERMINAL_MENU_COMMANDS).toHaveLength(7)
   })
 
   it('reports each command by name', () => {
-    show()
+    show({ hasSelection: true })
 
     for (const command of TERMINAL_MENU_COMMANDS) {
       onCommand.mockClear()
       fireEvent.click(screen.getByRole('menuitem', { name: command }))
       expect(onCommand).toHaveBeenCalledExactlyOnceWith(command)
     }
+  })
+})
+
+describe('Paste selection', () => {
+  it('is disabled until the terminal has something highlighted', () => {
+    show()
+    expect(screen.getByRole('menuitem', { name: 'Paste selection' })).toHaveProperty(
+      'disabled',
+      true
+    )
+
+    cleanup()
+
+    show({ hasSelection: true })
+    expect(screen.getByRole('menuitem', { name: 'Paste selection' })).toHaveProperty(
+      'disabled',
+      false
+    )
+  })
+
+  it('reports nothing while disabled', () => {
+    show()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Paste selection' }))
+
+    expect(onCommand).not.toHaveBeenCalled()
   })
 })
 
@@ -113,10 +143,10 @@ describe('keyboard', () => {
   })
 })
 
-/** None of the six reaches IPC directly, and none adds a channel. */
+/** None of the seven reaches IPC directly, and none adds a channel. */
 describe('boundary', () => {
   it('drives every command without touching the bridge', () => {
-    show()
+    show({ hasSelection: true })
 
     for (const command of TERMINAL_MENU_COMMANDS) {
       fireEvent.click(screen.getByRole('menuitem', { name: command }))

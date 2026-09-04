@@ -116,6 +116,8 @@ behavior.confirmBeforeClosingRunningTerminal
 **Context menu**
 
 - [x] Renders exactly six commands: Copy, Paste, Clear, Rename tab, Duplicate terminal, Close terminal.
+      *2026-09-04: a seventh, **Paste selection**, was added after two reported
+      bugs — see the note below the Verification section.*
 - [x] No seventh command exists — assert the exact list.
 - [x] Each command invokes the matching existing action; none introduces new IPC.
 
@@ -243,6 +245,29 @@ image toolchain. Phase 11 will want an `.ico` for the installer.
 - No feature behavior changed — only presentation.
 - **Every box in the Test plan is ticked and `npm test` is green.**
 - No pre-existing test was weakened or deleted to make styling changes pass.
+
+---
+
+## Amendment — 2026-09-04: two context-menu bugs
+
+Reported against 0.5.0, both in the right-click menu, both in
+`TerminalView.tsx`:
+
+1. **Paste dropped the keyboard.** The menu focuses its first command when it
+   opens; `runCommand` closed the menu without giving focus back, so after a
+   paste the next Enter went to the document body until the user clicked the
+   terminal again. Only the dismiss path had ever refocused. Fixed: Copy,
+   Paste, Paste selection and Clear all hand focus straight back to xterm.
+   Rename, Duplicate and Close still move focus elsewhere on purpose.
+2. **A line of earlier output took two trips through the menu** — Copy, then
+   Paste — to become the next command. Added a seventh command, **Paste
+   selection**: the highlighted text goes to the shell as typed input, nothing
+   presses Enter, the clipboard is untouched, and the item is disabled when
+   nothing is highlighted. Copy is unchanged.
+
+The "exactly six commands" boxes above stay ticked as written; the list is now
+seven and `TerminalContextMenu.spec.tsx` pins it there. Four cases in
+`TerminalView.spec.tsx` cover both bugs against a real xterm instance.
 
 ---
 

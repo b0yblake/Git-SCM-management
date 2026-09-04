@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Terminal } from '@xterm/xterm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSettingsStore } from '../../settings/public'
@@ -290,5 +290,82 @@ describe('exited state', () => {
     act(() => api.emitData({ sessionId: 'sess_1', data: 'still renders' }))
 
     expect(api.calls.write).toEqual([])
+  })
+})
+
+/**
+ * Two bugs reported 2026-09-04, both in the right-click menu.
+ *
+ * The menu focuses its first command when it opens, and unmounting it after a
+ * command dropped focus on the document body: a paste landed, and the Enter
+ * after it went nowhere until the user clicked the terminal again. And getting
+ * a line of earlier output back onto the prompt took Copy, then Paste — two
+ * trips through the menu for one line.
+ */
+describe('context menu', () => {
+  const clipboard = { readText: vi.fn(), writeText: vi.fn() }
+
+  beforeEach(() => {
+    clipboard.readText.mockReset().mockResolvedValue('from-clipboard')
+    clipboard.writeText.mockReset().mockResolvedValue(undefined)
+    // jsdom has no clipboard; the view only ever touches these two members.
+    Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true })
+  })
+
+  const openMenu = (): void => {
+    fireEvent.contextMenu(screen.getByTestId('terminal-surface'))
+    // The precondition the focus bug depends on: the menu now owns the keyboard.
+    expect(document.activeElement?.textContent).toBe('Copy')
+  }
+
+  it('Paste writes the clipboard to the shell and hands the keyboard back', async () => {
+    const { terminal } = renderView()
+    openMenu()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Paste' }))
+    await flush()
+
+    expect(api.calls.write).toEqual([{ sessionId: 'sess_1', data: 'from-clipboard' }])
+    expect(document.activeElement).toBe(terminal.textarea)
+  })
+
+  it('Copy hands the keyboard back too', async () => {
+    const { terminal } = renderView()
+    act(() => api.emitData({ sessionId: 'sess_1', data: 'echo hello' }))
+    await flush()
+    act(() => terminal.select(0, 0, 10))
+    openMenu()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Copy' }))
+
+    expect(clipboard.writeText).toHaveBeenCalledExactlyOnceWith('echo hello')
+    expect(document.activeElement).toBe(terminal.textarea)
+  })
+
+  it('Paste selection sends the highlighted text as typed input, without Enter', async () => {
+    const { terminal } = renderView()
+    act(() => api.emitData({ sessionId: 'sess_1', data: 'echo hello' }))
+    await flush()
+    act(() => terminal.select(0, 0, 10))
+    expect(terminal.getSelection()).toBe('echo hello')
+    openMenu()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Paste selection' }))
+
+    expect(api.calls.write).toEqual([{ sessionId: 'sess_1', data: 'echo hello' }])
+    // Nothing touched the clipboard: Copy stays a separate, deliberate act.
+    expect(clipboard.writeText).not.toHaveBeenCalled()
+    expect(clipboard.readText).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(terminal.textarea)
+  })
+
+  it('Paste selection is disabled when nothing is highlighted', () => {
+    renderView()
+    openMenu()
+
+    expect(screen.getByRole('menuitem', { name: 'Paste selection' })).toHaveProperty(
+      'disabled',
+      true
+    )
   })
 })

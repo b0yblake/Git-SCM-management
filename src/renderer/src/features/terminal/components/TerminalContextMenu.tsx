@@ -1,13 +1,18 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * The six commands Phase 10 allows, in order. Exported so the spec can assert
- * the list rather than re-typing it — a seventh would have to be added here,
- * which is exactly what the test watches.
+ * The commands, in order: Phase 10's six, plus "Paste selection" (2026-09-04).
+ * Exported so the spec can assert the list rather than re-typing it — an
+ * eighth would have to be added here, which is exactly what the test watches.
+ *
+ * "Paste selection" sends the highlighted text to the shell as if typed, so a
+ * line of earlier output becomes the next command without a Copy in between.
+ * It presses nothing: Enter is still the user's.
  */
 export const TERMINAL_MENU_COMMANDS = [
   'Copy',
   'Paste',
+  'Paste selection',
   'Clear',
   'Rename terminal',
   'Duplicate terminal',
@@ -19,6 +24,8 @@ export type TerminalMenuCommand = (typeof TERMINAL_MENU_COMMANDS)[number]
 export interface TerminalContextMenuProps {
   readonly x: number
   readonly y: number
+  /** Whether the terminal has text highlighted — "Paste selection" needs it. */
+  readonly hasSelection?: boolean
   readonly onCommand: (command: TerminalMenuCommand) => void
   readonly onDismiss: () => void
 }
@@ -33,6 +40,7 @@ export interface TerminalContextMenuProps {
 export const TerminalContextMenu = ({
   x,
   y,
+  hasSelection = false,
   onCommand,
   onDismiss
 }: TerminalContextMenuProps): React.JSX.Element => {
@@ -67,6 +75,7 @@ export const TerminalContextMenu = ({
               type="button"
               role="menuitem"
               ref={index === 0 ? firstRef : undefined}
+              disabled={command === 'Paste selection' && !hasSelection}
               onClick={() => onCommand(command)}
             >
               {command}
