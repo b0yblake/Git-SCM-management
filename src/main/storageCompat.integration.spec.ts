@@ -31,7 +31,7 @@ const versions = readdirSync(FIXTURES, { withFileTypes: true })
  * "old data always loads" is proven against — which is exactly what happened
  * to 0.2.0 and 0.3.0, and what Checkpoint C found.
  */
-const PUBLISHED_RELEASES = ['v0.1.0', 'v0.2.0', 'v0.3.0', 'v0.5.0']
+const PUBLISHED_RELEASES = ['v0.1.0', 'v0.2.0', 'v0.3.0', 'v0.5.0', 'v0.5.1', 'v0.5.2']
 
 /** Spot checks per known release, beyond "loads without complaint". */
 const EXPECTED_SETTINGS: Record<string, Partial<AppSettings>> = {
@@ -74,10 +74,36 @@ const EXPECTED_SETTINGS: Record<string, Partial<AppSettings>> = {
     checkForUpdatesOnStartup: true,
     skippedUpdateVersion: null
   },
-  // The only set written by a running GitDeck rather than authored to shape:
-  // the packaged 0.5.0 build saved a workspace and a full settings patch
-  // through its own IPC, and those files were copied here unedited.
+  // The last three are the only sets written by a running GitDeck rather than
+  // authored to shape: each packaged build saved a workspace and a full
+  // settings patch through its own IPC, and those files were copied here
+  // unedited. The values are identical on purpose — that is the assertion.
+  // The shape has not moved since 0.2.0, and a set per release is what would
+  // catch the day it does. 0.5.2 carries Phase 23, which restyled every
+  // surface and touched no persisted byte; this triple is the proof.
   'v0.5.0': {
+    version: 1,
+    defaultShellProfileId: 'cmd',
+    restoreLastWorkspace: true,
+    runStartupCommandsOnRestore: true,
+    terminalFontSize: 20,
+    terminalCursorBlink: false,
+    confirmBeforeClosingRunningTerminal: false,
+    checkForUpdatesOnStartup: false,
+    skippedUpdateVersion: '0.6.0'
+  },
+  'v0.5.1': {
+    version: 1,
+    defaultShellProfileId: 'cmd',
+    restoreLastWorkspace: true,
+    runStartupCommandsOnRestore: true,
+    terminalFontSize: 20,
+    terminalCursorBlink: false,
+    confirmBeforeClosingRunningTerminal: false,
+    checkForUpdatesOnStartup: false,
+    skippedUpdateVersion: '0.6.0'
+  },
+  'v0.5.2': {
     version: 1,
     defaultShellProfileId: 'cmd',
     restoreLastWorkspace: true,

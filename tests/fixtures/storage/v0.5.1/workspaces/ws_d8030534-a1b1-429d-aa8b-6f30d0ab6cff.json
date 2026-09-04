@@ -1,0 +1,23 @@
+{
+  "id": "ws_d8030534-a1b1-429d-aa8b-6f30d0ab6cff",
+  "name": "release-check",
+  "version": 1,
+  "terminals": [
+    {
+      "id": "term_0a1b2c3d-4e5f-4061-8273-849506172839",
+      "title": "Build",
+      "cwd": "C:\\Windows",
+      "shellProfileId": "cmd",
+      "startupCommand": "ver"
+    },
+    {
+      "id": "term_1b2c3d4e-5f60-4172-8394-950617283940",
+      "title": "Scratch",
+      "cwd": "C:\\",
+      "shellProfileId": "cmd"
+    }
+  ],
+  "activeTerminalId": "term_0a1b2c3d-4e5f-4061-8273-849506172839",
+  "createdAt": 1788492349940,
+  "updatedAt": 1788492349940
+}

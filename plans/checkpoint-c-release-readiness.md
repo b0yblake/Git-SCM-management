@@ -5,7 +5,7 @@
 | **Purpose** | Audit-only gate. Checkpoint B was never run and eleven phases shipped past it. This checkpoint absorbs B's checklist, adds one for everything Phases 12–22 promised, reconciles the documents with what actually shipped, and ends in a go/no-go for the **first release cut through the Phase 22 pipeline**. |
 | **Depends on** | Phase 22 (◐ — built and verified locally; the repository setting and the first tagged run are part of this checkpoint) |
 | **Unlocks** | The first tagged, attested release; a certified baseline for Phase 23 onward |
-| **Status** | ◐ **C1 passed 2026-09-03** (sections 1–4: guardrails, invariants, documents). **C2 started:** 0.5.0 is built, gated and fixtured — but not published. The tag, the repository setting and the clean-machine run cannot be done from this working copy. See both Reports. |
+| **Status** | ◐ **C1 passed 2026-09-03** (sections 1–4: guardrails, invariants, documents). **C2 started:** the release candidate is built, gated and fixtured — **0.5.2** as of 2026-09-04, carrying Phase 23 — but not published. The tag, the repository setting and the clean-machine run cannot be done from this working copy. See both Reports. |
 
 ---
 
@@ -327,15 +327,28 @@ one of them.
 
 ### 5. Release decision
 
-- [x] **Version: 0.5.0**, chosen 2026-09-03. 0.4.0 and 0.4.1 exist as
-      hand-built installers with different names and bytes; a GitHub 0.4.1
-      with a different hash would be a second 0.4.1. A fresh number also
-      marks the first pipeline release. `package.json` and the README badge
-      say 0.5.0, and the packaged binary's own `FileVersion` agrees — the
-      E2E version gate asserts it.
+- [x] **Version: 0.5.2**, superseding the 0.5.1 chosen earlier the same day,
+      which superseded 0.5.0 — none of them was ever tagged, and each was
+      overtaken by work that landed after it was built: the context-menu
+      fixes and About GitDeck, then the new icon, then Phase 23's restyle.
+      Original reasoning, still the reason the number is in the 0.5.x range
+      at all: 0.4.0 and 0.4.1 exist as hand-built installers with different
+      names and bytes; a GitHub 0.4.1 with a different hash would be a
+      second 0.4.1. A fresh number also marks the first pipeline release.
+      `package.json`, `package-lock.json` and the README badge say 0.5.2,
+      and the packaged binary's own `FileVersion` agrees — the E2E version
+      gate asserts it.
 - [x] **Fixtures appended** for the version being cut (section 2, Phase 15).
-      `tests/fixtures/storage/v0.5.0/` was written by the packaged 0.5.0
-      build itself, not authored.
+      `tests/fixtures/storage/v0.5.2/` was written by the packaged 0.5.2
+      build itself, not authored, as `v0.5.0/` and `v0.5.1/` were before it.
+- [x] **Installer icon regenerated** 2026-09-04 from `build/icon.png`.
+      Nothing derives `build/icon.ico` from the PNG, and its frames were not
+      square (256×248, 48×46, 24×23), so every Windows slot — all of which
+      are square — stretched the drawing. `scripts/make-icon.ps1` rebuilds it
+      squared, and the README build section says to run it after an artwork
+      change. 0.5.1 was rebuilt on the new icon, so its bytes and checksums
+      differ from the 0.5.1 built earlier the same day; neither was tagged,
+      so no published artifact changed underneath anyone.
 - [ ] **Go conditions:** every item in sections 1–4 passes or is accepted in
       writing; immutable releases is on; `npm run ci` and
       `npm run test:e2e` green locally against the exact bytes to be tagged;
