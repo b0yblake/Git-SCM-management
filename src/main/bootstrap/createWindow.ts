@@ -15,6 +15,15 @@ const PRELOAD = join(import.meta.dirname, '../preload/index.cjs')
 const ICON = join(import.meta.dirname, '../../build/icon.png')
 
 /**
+ * Painted by Electron before the renderer's first frame. It must equal the
+ * CSS `--surface`, or launching flashes a rectangle of a colour the app never
+ * uses again — it was VS Code's `#1e1e1e` until Phase 23. `createWindow.spec`
+ * pins it to the stylesheet, the same way `dataRoot` is pinned to
+ * `storagePaths`.
+ */
+export const WINDOW_BACKGROUND = '#0d1117'
+
+/**
  * What may be handed to the user's browser.
  *
  * `shell.openExternal` launches whatever the operating system has registered
@@ -35,7 +44,7 @@ export const createWindow = (): BrowserWindow => {
     // Shown only once the renderer has painted, against the app's own
     // background — otherwise Electron flashes a white rectangle first.
     show: false,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: WINDOW_BACKGROUND,
     title: 'GitDeck',
     ...(existsSync(ICON) ? { icon: ICON } : {}),
     webPreferences: {

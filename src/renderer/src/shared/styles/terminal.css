@@ -25,11 +25,9 @@
 
 .terminal-navigator__header h1 {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-small);
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .new-terminal {
@@ -40,10 +38,10 @@
 
 .new-terminal__create,
 .new-terminal__toggle {
-  min-height: 2.6rem;
-  border: 1px solid #286ed1;
-  background: #1f6feb;
-  color: white;
+  min-height: var(--control-md);
+  border: 1px solid var(--primary-border);
+  background: var(--primary);
+  color: var(--text-on-emphasis);
   cursor: pointer;
 }
 
@@ -52,18 +50,18 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border-radius: var(--radius) 0 0 var(--radius);
   font-weight: 600;
 }
 
 .new-terminal__toggle {
-  border-left-color: rgb(255 255 255 / 20%);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-left-color: var(--primary-border);
+  border-radius: 0 var(--radius) var(--radius) 0;
 }
 
 .new-terminal__create:hover,
 .new-terminal__toggle:not(:disabled):hover {
-  background: #388bfd;
+  background: var(--primary-hover);
 }
 
 .new-terminal__toggle:disabled {
@@ -80,10 +78,10 @@
   min-width: 13rem;
   margin: 0;
   padding: var(--space-1) 0;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface-control);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
   list-style: none;
 }
 
@@ -99,28 +97,29 @@
 }
 
 .new-terminal__item:hover {
-  background: var(--accent-surface);
+  background: var(--surface-hover);
 }
 
 .new-terminal__default {
-  color: var(--text-faint);
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
 .terminal-search {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 2.4rem;
+  min-height: var(--control-md);
   padding: 0 var(--space-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-muted);
 }
 
 .terminal-search:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
 }
 
 .terminal-search input {
@@ -134,7 +133,7 @@
 }
 
 .terminal-search input::placeholder {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 .terminal-navigator__group {
@@ -162,8 +161,7 @@
 
 .terminal-navigator__empty {
   margin: var(--space-2);
-  color: var(--text-faint);
-  font-size: var(--font-small);
+  color: var(--text-muted);
 }
 
 .terminal-session-list {
@@ -179,7 +177,7 @@
   position: relative;
   display: flex;
   min-width: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
 }
 
 .terminal-session-item::before {
@@ -193,7 +191,7 @@
 
 .terminal-session-item:hover,
 .terminal-session-item--visible {
-  background: rgb(255 255 255 / 3%);
+  background: var(--surface-hover);
 }
 
 .terminal-session-item--active {
@@ -258,26 +256,33 @@
 }
 
 .terminal-session-item__copy strong {
-  font-size: var(--font-small);
-  font-weight: 550;
+  font-weight: 600;
 }
 
 .terminal-session-item__copy small {
-  color: var(--text-faint);
-  font-size: 0.69rem;
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
 .terminal-session-item__pane {
   display: grid;
-  width: 1.45rem;
-  height: 1.45rem;
+  min-width: 20px;
+  height: 20px;
   flex: none;
+  padding: 0 6px;
   place-items: center;
-  border: 1px solid #315c8d;
-  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--surface-counter);
+  color: var(--text);
+  font-size: var(--font-small);
+  font-weight: 500;
+}
+
+/* On the active row the counter picks up the row's own accent. */
+.terminal-session-item--active .terminal-session-item__pane {
   background: var(--accent-surface);
   color: var(--accent-strong);
-  font-size: var(--font-tiny);
 }
 
 .terminal-session-item__close {
@@ -291,7 +296,7 @@
 
 .terminal-session-item:hover .terminal-session-item__close,
 .terminal-session-item__close:focus-visible {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 .terminal-session-item__close:hover {
@@ -303,9 +308,9 @@
   flex: 1;
   margin: 0.35rem;
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  border: 1px solid var(--focus);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--text);
 }
 
@@ -314,9 +319,9 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--border);
-  color: var(--text-faint);
-  font-size: var(--font-tiny);
+  border-top: 1px solid var(--border-muted);
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
 .terminal-mosaic {
@@ -330,31 +335,34 @@
 .terminal-layout-toolbar {
   display: flex;
   min-width: 0;
-  min-height: 3.6rem;
+  min-height: 48px;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--space-3);
   border-bottom: 1px solid var(--border);
-  background: #0f151d;
+  background: var(--surface-sunken);
 }
 
 .terminal-layout-toolbar__modes {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
+/* A row of chips, the shape the reference gives a set of sibling actions:
+   fully round, always outlined, and only the selected one tinted. */
 .terminal-layout-toolbar__mode {
   display: flex;
-  min-height: 2.35rem;
+  min-height: var(--control-md);
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--text-muted);
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -364,7 +372,7 @@
 }
 
 .terminal-layout-toolbar__mode[aria-pressed='true'] {
-  border-color: #315c8d;
+  border-color: var(--accent);
   background: var(--accent-surface);
   color: var(--accent-strong);
 }
@@ -428,7 +436,9 @@
   min-height: 0;
   padding: 0.55rem;
   overflow: hidden;
-  background: var(--surface-sunken);
+  /* The canvas is the page the panes sit on, and in the reference that page
+     is the default surface — the darkest surface is reserved for chrome. */
+  background: var(--surface);
 }
 
 .terminal-mosaic__canvas--focus {
@@ -468,11 +478,10 @@
   gap: var(--space-2);
   min-width: 0;
   min-height: 0;
-  border: 1px dashed var(--border-strong);
+  border: 1px dashed var(--border);
   border-radius: var(--radius);
   background: transparent;
-  color: var(--text-faint);
-  font-size: var(--font-small);
+  color: var(--text-muted);
   cursor: pointer;
 }
 
@@ -507,7 +516,7 @@
   min-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #0c1117;
+  background: var(--surface);
   overflow: hidden;
 }
 
@@ -518,13 +527,13 @@
 
 .terminal-pane__header {
   display: flex;
-  min-height: 3.2rem;
+  min-height: 40px;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   padding: 0 var(--space-2) 0 var(--space-3);
-  border-bottom: 1px solid var(--border);
-  background: #111821;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--surface-raised);
 }
 
 .terminal-pane__identity {
@@ -536,13 +545,21 @@
 
 .terminal-pane__identity strong {
   flex: none;
-  font-size: var(--font-small);
   font-weight: 600;
 }
 
+/* The shell name never wraps: at 12px in a two-column Grid the header is
+   narrow enough that it would, and a two-line header breaks the 40px row.
+   The path beside it absorbs the shrink and ellipsises instead. */
 .terminal-pane__identity > span:not(.terminal-status) {
-  color: var(--text-faint);
-  font-size: var(--font-tiny);
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  white-space: nowrap;
+}
+
+.terminal-pane__identity > .terminal-pane__cwd {
+  flex: 0 1 auto;
 }
 
 .terminal-pane__cwd {
@@ -560,18 +577,18 @@
 
 .terminal-pane__actions button {
   display: grid;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: var(--control-sm);
+  height: var(--control-sm);
   place-items: center;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   background: transparent;
-  color: var(--text-faint);
+  color: var(--text-muted);
   cursor: pointer;
 }
 
 .terminal-pane__actions button:hover {
-  background: var(--surface-control-hover);
+  background: var(--surface-control);
   color: var(--text);
 }
 
@@ -585,7 +602,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: #0c1117;
+  background: var(--surface);
 }
 
 .terminal-view__surface {
@@ -604,29 +621,41 @@
   right: var(--space-3);
   bottom: var(--space-3);
   padding: 0.35rem 0.6rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-control);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
   color: var(--text-muted);
   font-size: var(--font-small);
 }
 
 .terminal-mosaic__empty {
   grid-area: 1 / 1 / -1 / -1;
-  color: var(--text-faint);
-}
-
-.terminal-mosaic__empty strong {
   color: var(--text-muted);
 }
 
+.terminal-mosaic__empty strong {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
 .terminal-mosaic__empty button {
+  display: inline-flex;
+  min-height: var(--control-md);
+  align-items: center;
   margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-control);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--text-on-emphasis);
+  font-weight: 600;
   cursor: pointer;
+}
+
+.terminal-mosaic__empty button:hover {
+  background: var(--primary-hover);
 }
 
 @media (max-width: 1180px) {

@@ -1,12 +1,18 @@
+/*
+ * The status bar was written against VS Code's greys (#202020, #333, #d4d4d4)
+ * and was the one surface the token block never reached, so it read as a
+ * different application pasted along the bottom edge. Phase 23 moved it onto
+ * the shared tokens; the roles below are unchanged.
+ */
 .status-bar {
   display: flex;
   align-items: center;
   gap: 1rem;
   min-height: 1.6rem;
   padding: 0.15rem 0.75rem;
-  border-top: 1px solid #333;
-  background: #202020;
-  font-size: 0.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+  font-size: var(--font-small);
 }
 
 .git-badge {
@@ -16,23 +22,23 @@
 }
 
 .git-badge__branch {
-  color: #d4d4d4;
+  color: var(--text);
 }
 
 .git-badge__branch::before {
   content: '⎇ ';
-  color: #8a8a8a;
+  color: var(--text-muted);
 }
 
 .git-badge__ab {
-  color: #4a9eff;
+  color: var(--accent-strong);
   letter-spacing: 0.08em;
 }
 
 .git-badge__clean {
-  color: #8a8a8a;
+  color: var(--text-muted);
 }
 
 .git-badge__dirty {
-  color: #e6c07b;
+  color: var(--warning);
 }

@@ -57,8 +57,17 @@ The packaged suite today, and the phase each file answers for:
 
 Phase 16 has no packaged spec and says so in writing: a bounded outbound GET
 against a service that answered 404 until the first real release is not
-usefully E2E-testable. Phases 13, 20 and 21 are renderer-only and correctly
-add none.
+usefully E2E-testable. Phases 13, 20, 21 and 23 are renderer-only and
+correctly add none.
+
+Phase 23 is the one phase whose subject — colour, shape and size — no spec
+in either project can see: jsdom lays out no CSS, and §7 forbids snapshots
+of rendered UI. `src/shared/tokens.spec.ts` therefore audits the
+stylesheets as **text**, the way `architecture.spec.ts` audits source: no
+colour outside the token block, no `var()` naming an undeclared token, and
+a WCAG contrast floor on every pair that carries text. What text cannot
+check — that a rule still reaches the element it was written for — is
+covered by driving the packaged build and looking at it.
 
 **Running the packaged suite needs the installed GitDeck closed.** Each spec
 isolates itself with `--user-data-dir`, so the single-instance lock (Phase 18)

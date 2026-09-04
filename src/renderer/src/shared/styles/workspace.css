@@ -30,17 +30,15 @@
 
 .workspace-sidebar__header h2 {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-small);
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .workspace-sidebar__header button {
   flex: none;
   white-space: nowrap;
-  font-size: var(--font-tiny);
+  font-size: var(--font-small);
 }
 
 .workspace-sidebar__loading {
@@ -63,36 +61,52 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-1);
+  padding-right: var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--surface-control);
+  background: transparent;
 }
 
 .workspace-sidebar__item:hover {
   border-color: var(--border);
-  background: var(--surface-control-hover);
+  background: var(--surface-hover);
 }
 
+/* Three signals already say "this is the open one" — the border, the tint and
+   the green Active label — so the inset bar the navigator rows use would be a
+   fourth, drawn underneath the border where it cannot be seen anyway. */
 .workspace-sidebar__item--active {
-  border-color: #285581;
+  border-color: var(--accent);
   background: var(--surface-selected);
-  box-shadow: inset 2px 0 var(--accent);
 }
 
-.workspace-sidebar__open {
+/*
+ * Two classes, on purpose. `.workspace-panel button` is the panel's default
+ * button and carries a type selector, so it outranks a lone class — and it
+ * would centre this button's two lines and strip its vertical padding, which
+ * is exactly what it did until this rule existed. Winning on specificity is
+ * also what lets the border and background below drop their `!important`.
+ */
+.workspace-sidebar__item > .workspace-sidebar__open {
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.2rem;
-  padding: 0.55rem 0.65rem;
-  border: none !important;
-  background: transparent !important;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  font-weight: 400;
   text-align: left;
 }
 
 .workspace-sidebar__name {
   display: flex;
+  /* The Active label is 20px tall and only one row carries it; without a
+     floor, that row would stand taller than its neighbours. */
+  min-height: 20px;
+  min-width: 0;
   max-width: 100%;
   align-items: center;
   gap: var(--space-2);
@@ -103,31 +117,47 @@
   white-space: nowrap;
 }
 
+/* Primer's Label: outlined, never filled, and in the colour of what it
+   reports — this one says the workspace is the one currently open. */
 .workspace-sidebar__active {
-  padding: 0.08rem 0.35rem;
-  border: 1px solid #285581;
-  border-radius: 999px;
-  color: var(--accent-strong);
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  display: inline-flex;
+  height: 20px;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid var(--success);
+  border-radius: var(--radius-full);
+  color: var(--success);
+  font-size: var(--font-small);
+  font-weight: 500;
 }
 
 .workspace-sidebar__count {
-  color: var(--text-faint);
-  font-size: var(--font-tiny);
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
+/* Row actions: quiet until wanted, so the workspace name stays the thing the
+   eye lands on. They are always rendered rather than revealed on hover, which
+   would put them out of reach of the keyboard. */
 .workspace-sidebar__item > button:not(.workspace-sidebar__open) {
-  padding: var(--space-1);
+  min-height: var(--control-sm);
+  padding: 0 var(--space-2);
   border-color: transparent;
   background: transparent;
-  color: var(--text-faint);
-  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  font-weight: 400;
 }
 
-.workspace-sidebar__item > button:not(.workspace-sidebar__open):hover {
+.workspace-sidebar__item > button:not(.workspace-sidebar__open):hover:not(:disabled) {
+  background: var(--surface-control);
   color: var(--text);
+}
+
+/* Delete is the destructive one, and says so only under the pointer — the
+   same restraint the confirm dialog's danger button shows. */
+.workspace-sidebar__item > button:last-child:hover:not(:disabled) {
+  color: var(--danger);
 }
 
 .workspace-sidebar__notices {
@@ -141,19 +171,21 @@
 
 .workspace-sidebar__notice {
   padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-tiny);
-  line-height: 1.4;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: var(--font-small);
 }
 
 .workspace-sidebar__notice--error {
+  border-color: var(--danger);
   background: var(--danger-surface);
   color: var(--danger);
 }
 
 .workspace-sidebar__notice--warning {
+  border-color: var(--warning);
   background: var(--warning-surface);
-  color: #e6c07b;
+  color: var(--warning);
 }
 
 .workspace-editor {
@@ -163,9 +195,8 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-4);
-  border-left: 1px solid var(--border-strong);
-  background: #0f151d;
-  box-shadow: -12px 0 28px rgb(0 0 0 / 20%);
+  border-left: 1px solid var(--border);
+  background: var(--surface-raised);
   overflow-y: auto;
 }
 
@@ -178,48 +209,55 @@
 }
 
 .workspace-editor__header span {
-  color: var(--text-faint);
-  font-size: var(--font-tiny);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
 .workspace-editor__header h2 {
   margin: 0.2rem 0 0;
   color: var(--text);
-  font-size: 1rem;
+  font-size: 16px;
+  font-weight: 600;
 }
 
-.workspace-editor__header button {
-  width: 2rem;
-  height: 2rem;
+/* Two classes for the same reason `.workspace-sidebar__open` needs them: the
+   panel's default-button rule is declared later at equal specificity, and its
+   horizontal padding would leave this square button 8px of content box. */
+.workspace-editor .workspace-editor__header button {
+  width: var(--control-md);
+  height: var(--control-md);
   padding: 0;
   border-color: transparent;
   background: transparent;
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-size: 1rem;
 }
 
+.workspace-editor .workspace-editor__header button:hover {
+  background: var(--surface-control);
+  color: var(--text);
+}
+
 .workspace-editor label {
-  color: var(--text-muted);
-  font-size: var(--font-small);
+  color: var(--text);
 }
 
 .workspace-editor input,
 .workspace-editor select {
   min-width: 0;
-  padding: 0.48rem 0.55rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  min-height: var(--control-md);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--text);
 }
 
 .workspace-editor input:focus,
 .workspace-editor select:focus {
-  border-color: var(--accent);
+  border-color: var(--focus);
   outline: none;
-  box-shadow: 0 0 0 2px rgb(47 129 247 / 15%);
+  box-shadow: 0 0 0 2px var(--accent-surface);
 }
 
 .definition-editor {
@@ -247,20 +285,30 @@
   grid-column: 1 / 3;
 }
 
-.definition-editor button {
+/* Removing a terminal is the destructive action in this panel, so it reads as
+   one: danger text at rest, a danger fill only under the pointer. Two classes
+   again — the panel's default-button rule is declared later at equal
+   specificity and was quietly winning this `color`. */
+.workspace-editor .definition-editor button {
   width: max-content;
   grid-column: 2;
   justify-self: end;
   color: var(--danger);
 }
 
+.workspace-editor .definition-editor button:hover:not(:disabled) {
+  border-color: var(--danger-emphasis);
+  background: var(--danger-emphasis);
+  color: var(--text-on-emphasis);
+}
+
 .workspace-editor__problems {
   margin: 0;
   padding: var(--space-2) var(--space-3) var(--space-2) 2rem;
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
   background: var(--danger-surface);
   color: var(--danger);
-  font-size: var(--font-small);
 }
 
 .workspace-editor__actions {
@@ -271,12 +319,27 @@
   border-top: 1px solid var(--border);
 }
 
+/*
+ * The panel's default button.
+ *
+ * Read this before styling any button in this file. The selector carries a
+ * type, so it beats a lone class and ties with any other `.class button` — and
+ * it is declared last. Three rules here learned that the hard way: the
+ * sidebar's open button lost its left alignment and vertical padding, the
+ * editor's close button lost its square shape, and Remove lost its danger
+ * colour. Anything that overrides this one needs **two** classes.
+ */
 .workspace-panel button {
-  padding: 0.42rem 0.65rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  min-height: var(--control-md);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--surface-control);
   color: var(--text);
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -292,13 +355,13 @@
 }
 
 .workspace-editor__actions button:first-child {
-  border-color: #286ed1;
-  background: #1f6feb;
-  color: white;
+  border-color: var(--primary-border);
+  background: var(--primary);
+  color: var(--text-on-emphasis);
 }
 
 .workspace-editor__actions button:first-child:hover:not(:disabled) {
-  background: #388bfd;
+  background: var(--primary-hover);
 }
 
 .startup-settings {
@@ -312,10 +375,9 @@
 
 .startup-settings h2 {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-small);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .startup-settings label {
@@ -323,7 +385,10 @@
   align-items: center;
   gap: var(--space-2);
   color: var(--text);
-  font-size: var(--font-small);
+}
+
+.startup-settings input[type='checkbox'] {
+  accent-color: var(--accent);
 }
 
 .startup-settings label:has(input:disabled) {
@@ -332,9 +397,8 @@
 
 .startup-settings__hint {
   margin: 0;
-  color: var(--text-faint);
-  font-size: var(--font-tiny);
-  line-height: 1.4;
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
 @media (max-width: 760px) {

@@ -4,6 +4,7 @@ import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { DEFAULT_SETTINGS } from '@shared/contracts/settings'
 import { useTerminalSession } from '../hooks/useTerminalSession'
+import { TERMINAL_THEME } from '../model/terminalTheme'
 import { TerminalContextMenu, type TerminalMenuCommand } from './TerminalContextMenu'
 
 export interface TerminalViewProps {
@@ -27,13 +28,6 @@ export interface TerminalViewProps {
   readonly onDuplicate?: () => void
   readonly onClose?: () => void
 }
-
-const THEME = {
-  background: '#0c1117',
-  foreground: '#e6edf3',
-  cursor: '#e6edf3',
-  selectionBackground: '#23466d'
-} as const
 
 /**
  * Scrollback is the dominant renderer memory cost, and every session keeps
@@ -93,7 +87,7 @@ export const TerminalView = ({
       fontFamily: 'Cascadia Mono, Consolas, Menlo, monospace',
       fontSize,
       scrollback: TERMINAL_SCROLLBACK_LINES,
-      theme: THEME
+      theme: TERMINAL_THEME
     })
     const fitAddon = new FitAddon()
     terminal.loadAddon(fitAddon)

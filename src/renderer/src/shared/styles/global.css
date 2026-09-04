@@ -3,47 +3,99 @@
 @import './git.css';
 @import './ports.css';
 
+/*
+ * The single source of colour, shape and size (Phase 23).
+ *
+ * Every value is a GitHub Primer dark-theme primitive, so each one is
+ * checkable against a published palette rather than being hand-tuned. The
+ * role names are GitDeck's own and did not change in Phase 23 — only their
+ * values did — which is why the restyle touched no class name.
+ *
+ * `tokens.spec.ts` enforces three things about this block: no stylesheet
+ * declares a colour outside it, every `var(--x)` elsewhere is declared here,
+ * and the pairs that carry text meet WCAG AA. Two copies of `--surface` live
+ * outside CSS — the xterm theme and the window's pre-paint background — and
+ * are pinned to it by test.
+ */
 :root {
   color-scheme: dark;
 
-  --surface: #0d1117;
-  --surface-raised: #111821;
-  --surface-sunken: #090d12;
-  --surface-control: #18212c;
-  --surface-control-hover: #202c39;
-  --surface-selected: #17263a;
+  /* Surfaces */
+  --surface: #0d1117; /* canvas, terminal bodies, inputs */
+  --surface-raised: #151b23; /* drawer, sidebar, cards, pane headers */
+  --surface-sunken: #010409; /* rail, toolbar, status bar */
+  --surface-overlay: #151b23; /* dialogs, menus, toasts */
+  --surface-control: #212830; /* default button, at rest */
+  --surface-control-hover: #262c36;
+  --surface-hover: rgb(101 108 118 / 10%); /* rows, rail and menu items */
+  --surface-selected: rgb(56 139 253 / 10%);
+  --surface-counter: rgb(101 108 118 / 20%);
+  --backdrop: rgb(1 4 9 / 60%);
 
-  --border: #25303c;
-  --border-strong: #344252;
+  /* Text. Primer has one secondary grey, so faint is an alias of muted. */
+  --text: #f0f6fc;
+  --text-muted: #9198a1;
+  --text-faint: #9198a1;
+  --text-disabled: #656c76;
+  --text-on-emphasis: #ffffff;
 
-  --text: #e6edf3;
-  --text-muted: #9ba8b5;
-  --text-faint: #718090;
-  --text-disabled: #566271;
+  /* Accent — state (selection, focus, links, the focused pane), never a
+     button fill. White on the old #2f81f7 was 3.75:1 and failed AA. */
+  --accent: #1f6feb;
+  --accent-strong: #4493f8;
+  --accent-surface: rgb(56 139 253 / 10%);
 
-  --accent: #2f81f7;
-  --accent-strong: #58a6ff;
-  --accent-surface: #102b4c;
+  /* The one filled action per view: New Terminal, Save, Open. */
+  --primary: #238636;
+  --primary-hover: #29903b;
+  --primary-border: rgb(240 246 252 / 10%);
+
+  /* Status */
   --success: #3fb950;
-  --danger: #f47067;
-  --danger-surface: #3a2020;
   --warning: #d29922;
-  --warning-surface: #3a3320;
+  --warning-surface: rgb(187 128 9 / 15%);
+  --danger: #f85149;
+  --danger-emphasis: #da3633; /* destructive button, on hover */
+  --danger-surface: rgb(248 81 73 / 10%);
+
+  /* Borders. The old #25303c was 1.41:1 on the canvas — a border nobody
+     could see, which is most of what made the app look unlike the
+     reference. */
+  --border: #3d444d;
+  --border-muted: rgb(61 68 77 / 70%); /* inner dividers, table rows */
+  --border-strong: #656c76;
+
+  --focus: #1f6feb;
+
+  /* Only overlays cast a shadow; panels separate with a border. */
+  --shadow-overlay: 0 0 0 1px var(--border), 0 16px 32px rgb(1 4 9 / 85%);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
 
-  --radius-sm: 4px;
-  --radius: 7px;
+  --radius-sm: 3px; /* kbd */
+  --radius: 6px; /* buttons, inputs, cards, panes, menus */
+  --radius-lg: 12px; /* dialogs */
+  --radius-full: 9999px; /* chips, labels, counters */
+
+  --control-sm: 28px;
+  --control-md: 32px;
+
   --font-ui: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-small: 0.8125rem;
-  --font-tiny: 0.75rem;
+  --font-mono: 'Cascadia Mono', Consolas, Menlo, monospace; /* xterm's stack */
+  /* In px, not rem: the root is pinned to 14px below, so `rem` here means
+     "× 14" and 0.75rem would be 10.5px rather than the 12 this names. */
+  --font-small: 12px; /* meta, captions, status bar */
+  --font-tiny: 12px; /* alias of --font-small; kept so no rule breaks */
 
   font-family: var(--font-ui);
   font-size: 14px;
+  line-height: 1.5;
 }
 
 * {
@@ -73,7 +125,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-strong);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -121,25 +173,28 @@ button {
 .activity-rail {
   z-index: 35;
   display: flex;
-  width: 4.5rem;
+  /* Wide enough for "Workspaces" at the 12px meta size. The rail was 63px
+     when its labels were 9.5px, and they overflowed it the moment the type
+     scale moved (Phase 23). */
+  width: 76px;
   flex: none;
   flex-direction: column;
   align-items: stretch;
   border-right: 1px solid var(--border);
-  background: #0b1016;
+  background: var(--surface-sunken);
 }
 
 .activity-rail__brand {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 32px;
+  height: 32px;
   margin: var(--space-3) auto var(--space-4);
   place-items: center;
   border-radius: var(--radius);
-  background: linear-gradient(145deg, #2380ed, #2557c7);
-  color: white;
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: var(--accent);
+  color: var(--text-on-emphasis);
+  font-size: var(--font-small);
+  font-weight: 600;
   letter-spacing: 0.04em;
 }
 
@@ -153,7 +208,7 @@ button {
 .activity-rail__button {
   position: relative;
   display: flex;
-  min-height: 4.1rem;
+  min-height: 56px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -173,15 +228,15 @@ button {
 .activity-rail__button::before {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
   background: transparent;
   content: '';
 }
 
 .activity-rail__button:hover {
   color: var(--text);
-  background: rgb(255 255 255 / 3%);
+  background: var(--surface-hover);
 }
 
 .activity-rail__button[aria-current='page'] {
@@ -194,8 +249,8 @@ button {
 }
 
 .activity-rail__button svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -204,7 +259,7 @@ button {
 }
 
 .activity-rail__button span {
-  font-size: 0.68rem;
+  font-size: var(--font-small);
 }
 
 .tool-drawer {
@@ -212,9 +267,8 @@ button {
   inset: 0 auto 0 0;
   z-index: 30;
   width: 19rem;
-  border-right: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border);
   background: var(--surface-raised);
-  box-shadow: 14px 0 32px rgb(0 0 0 / 24%);
   overflow: hidden;
 }
 
@@ -253,23 +307,24 @@ button {
 }
 
 .empty-state__title {
-  color: var(--text-muted);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .empty-state__hint {
   max-width: 24rem;
-  color: var(--text-faint);
-  font-size: var(--font-small);
-  line-height: 1.45;
+  color: var(--text-muted);
 }
 
 .empty-state kbd {
   padding: 0 var(--space-1);
-  border: 1px solid var(--border-strong);
-  border-radius: 3px;
-  background: var(--surface-control);
-  font-family: inherit;
-  font-size: var(--font-tiny);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-size: var(--font-small);
 }
 
 .toast-host {
@@ -291,11 +346,10 @@ button {
   gap: var(--space-2);
   max-width: 26rem;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface-control);
-  box-shadow: 0 8px 28px rgb(0 0 0 / 45%);
-  font-size: var(--font-small);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
 }
 
 .toast--error {
@@ -323,22 +377,23 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(0 0 0 / 55%);
+  background: var(--backdrop);
 }
 
 .dialog {
   min-width: 20rem;
   max-width: 28rem;
   padding: var(--space-4);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface-raised);
-  box-shadow: 0 16px 48px rgb(0 0 0 / 55%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
 }
 
 .dialog__title {
   margin: 0 0 var(--space-3);
-  line-height: 1.45;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .dialog__actions {
@@ -349,11 +404,16 @@ button {
 
 .dialog__actions button,
 .settings-screen button {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  min-height: var(--control-md);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--surface-control);
   color: var(--text);
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -388,15 +448,11 @@ button {
 
 .dialog--confirm .dialog__title {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
 }
 
 .dialog__description {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);
-  font-size: var(--font-small);
-  line-height: 1.5;
 }
 
 .dialog--confirm .dialog__actions {
@@ -405,19 +461,25 @@ button {
 
 /* The focused default action must look armed: Enter fires it. */
 .dialog--confirm .dialog__actions button:focus {
-  outline: 2px solid var(--accent-strong);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
+/*
+ * Destructive actions read as an ordinary button carrying danger-coloured
+ * text, and only commit to a red fill under the pointer — Primer's rule, and
+ * the reason a confirm dialog does not open already shouting.
+ */
 .dialog__actions .dialog__button--danger {
-  border-color: var(--danger);
-  background: var(--danger-surface);
+  border-color: var(--border);
+  background: var(--surface-control);
   color: var(--danger);
-  font-weight: 600;
 }
 
 .dialog__actions .dialog__button--danger:hover {
-  background: color-mix(in srgb, var(--danger) 18%, var(--danger-surface));
+  border-color: var(--danger-emphasis);
+  background: var(--danger-emphasis);
+  color: var(--text-on-emphasis);
 }
 
 .dialog--confirm .dialog__actions .dialog__button--danger:focus {
@@ -435,14 +497,14 @@ button {
   gap: var(--space-3);
   max-width: 34rem;
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface-raised);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
 }
 
 .update-banner__message {
-  font-size: var(--font-small);
+  flex: 1;
 }
 
 .update-banner__actions {
@@ -450,25 +512,25 @@ button {
   gap: var(--space-2);
 }
 
+/* Both actions are default buttons: a notification strip has no primary, and
+   the one filled action per view belongs to the view underneath it. */
 .update-banner__actions button {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  min-height: var(--control-sm);
+  align-items: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--surface-control);
   color: var(--text);
   font-size: var(--font-small);
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .update-banner__actions button:hover {
   background: var(--surface-control-hover);
-}
-
-.update-banner__actions .update-banner__primary {
-  border-color: var(--accent);
-  background: var(--accent-surface);
-  color: var(--accent-strong);
 }
 
 .update-check {
@@ -481,8 +543,7 @@ button {
 }
 
 .data-folder > label {
-  color: var(--text-muted);
-  font-size: var(--font-small);
+  color: var(--text);
 }
 
 .data-folder__row {
@@ -494,13 +555,16 @@ button {
 .data-folder__path {
   flex: 1;
   min-width: 0;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  display: flex;
+  min-height: var(--control-md);
+  align-items: center;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--text-muted);
-  font-family: Consolas, monospace;
-  font-size: var(--font-tiny);
+  font-family: var(--font-mono);
+  font-size: var(--font-small);
 }
 
 .data-folder__hint {
@@ -512,18 +576,16 @@ button {
 .data-folder__pending {
   margin: var(--space-2) 0 0;
   color: var(--warning);
-  font-size: var(--font-small);
 }
 
 .data-folder__pending code {
-  font-family: Consolas, monospace;
+  font-family: var(--font-mono);
   word-break: break-all;
 }
 
 .update-check__result {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);
-  font-size: var(--font-small);
 }
 
 .update-check__link {
@@ -679,17 +741,19 @@ button {
   min-width: 13rem;
   margin: 0;
   padding: var(--space-1) 0;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface-control);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-overlay);
   list-style: none;
 }
 
 .context-menu button {
-  display: block;
+  display: flex;
   width: 100%;
-  padding: 0.45rem var(--space-3);
+  min-height: var(--control-md);
+  align-items: center;
+  padding: 0 var(--space-3);
   border: none;
   background: transparent;
   color: var(--text);
@@ -699,7 +763,18 @@ button {
 
 .context-menu button:hover,
 .context-menu button:focus-visible {
-  background: var(--accent-surface);
+  background: var(--surface-hover);
+}
+
+/* "Paste selection" with nothing highlighted: shown, so the command is
+   discoverable, but plainly not available. */
+.context-menu button:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+.context-menu button:disabled:hover {
+  background: transparent;
 }
 
 .settings-screen {
@@ -713,15 +788,13 @@ button {
 
 .settings-screen h2 {
   margin: 0 0 var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--font-small);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .settings-screen > label {
-  color: var(--text-muted);
-  font-size: var(--font-small);
+  color: var(--text);
 }
 
 .settings-screen label:has(input[type='checkbox']) {
@@ -734,23 +807,34 @@ button {
 .settings-screen input[type='number'],
 .settings-screen select {
   min-width: 0;
+  min-height: var(--control-md);
   max-width: 100%;
-  padding: var(--space-2);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--text);
+}
+
+.settings-screen input[type='number']:focus,
+.settings-screen select:focus {
+  border-color: var(--focus);
+}
+
+/* The one checkbox the app draws; the browser's own control, recoloured. */
+.settings-screen input[type='checkbox'] {
+  accent-color: var(--accent);
 }
 
 .settings-screen__error {
   margin: 0;
   color: var(--danger);
-  font-size: var(--font-tiny);
+  font-size: var(--font-small);
 }
 
 @media (max-width: 980px) {
   .activity-rail {
-    width: 3.5rem;
+    width: 48px;
   }
 
   .activity-rail__button span {
@@ -758,6 +842,6 @@ button {
   }
 
   .activity-rail__button {
-    min-height: 3.5rem;
+    min-height: 44px;
   }
 }

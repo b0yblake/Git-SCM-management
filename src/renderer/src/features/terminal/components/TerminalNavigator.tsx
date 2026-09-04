@@ -116,7 +116,6 @@ export const TerminalNavigator = ({
 
       <div className="terminal-navigator__group">
         <div className="terminal-navigator__group-title">
-          <span aria-hidden="true">⌄</span>
           Open sessions
           <span>{terminals.length}</span>
         </div>

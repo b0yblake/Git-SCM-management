@@ -1,5 +1,25 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { mayOpenExternally } from './createWindow'
+import { mayOpenExternally, WINDOW_BACKGROUND } from './createWindow'
+
+describe('the colour painted before the renderer exists', () => {
+  it('is the renderer’s own canvas', () => {
+    // Two copies of one value, in two processes that cannot share a constant:
+    // Electron needs it at window construction, the stylesheet owns it. Pinned
+    // here the same way dataRoot is pinned to storagePaths — the alternative
+    // is a flash of an unrelated colour at every launch, which is what
+    // #1e1e1e was until Phase 23.
+    const css = readFileSync(
+      join(import.meta.dirname, '../../renderer/src/shared/styles/global.css'),
+      'utf8'
+    )
+    const surface = /--surface\s*:\s*(#[0-9a-f]{6})\s*;/i.exec(css)?.[1]
+
+    expect(surface, 'global.css declares an opaque --surface').toBeDefined()
+    expect(WINDOW_BACKGROUND).toBe(surface)
+  })
+})
 
 /**
  * The window-open handler is the one place page content can name a URL and

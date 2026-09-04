@@ -37,7 +37,8 @@ Every phase plan carries a **Test plan** section with concrete test files and sp
 | 20 | [phase-20-add-terminal-slot.md](phase-20-add-terminal-slot.md) | One "Add new Terminal" ghost slot in the next empty pane of Columns/Main+Side/Grid | ☑ |
 | 21 | [phase-21-elastic-grid.md](phase-21-elastic-grid.md) | Grid grows past four: a 16:9-guided lattice keeps every terminal on one page, add slot always last | ☑ |
 | 22 | [phase-22-release-packaging.md](phase-22-release-packaging.md) | One pushed tag → GitHub Release with checksums, EXE + MSI installers, digests and attestation — no hand upload | ◐ |
-| — | [checkpoint-c-release-readiness.md](checkpoint-c-release-readiness.md) | **Audit gate** — absorbs the unrun Checkpoint B, verifies every Phase 12–22 invariant, reconciles the docs, then go/no-go for the first pipeline release | ◐ C1 passed 2026-09-03; 0.5.0 built and gated, tag owed |
+| — | [checkpoint-c-release-readiness.md](checkpoint-c-release-readiness.md) | **Audit gate** — absorbs the unrun Checkpoint B, verifies every Phase 12–22 invariant, reconciles the docs, then go/no-go for the first pipeline release | ◐ C1 passed 2026-09-03; 0.5.2 built and gated, tag owed |
+| 23 | [phase-23-primer-dark-restyle.md](phase-23-primer-dark-restyle.md) | Re-skin every surface to GitHub's dark Primer language — visible borders, 6 px corners, 32 px controls, one green primary, one token block; no layout, IPC or behaviour change | ☑ |
 
 > Note on ordering: `PLAN.md` §35 places the architecture checkpoint after Phase 5. It is placed after **Phase 4** here because every item on that checklist is already testable once multi-tab works, and catching a boundary violation before shell detection is written is cheaper. Move it back one row if you prefer to follow §35 literally.
 
@@ -71,6 +72,13 @@ in `BACKLOG.md`, blocked on code signing.
 > ago. Checkpoint C carries every Checkpoint B item plus the Phase 12–22
 > invariants, and owns the go/no-go for the first release cut by the Phase 22
 > pipeline.
+
+Phase 23 was scoped and implemented 2026-09-04 against a github.com
+dark-theme screenshot. It is renderer CSS plus one constant in Main and
+changes no behaviour. Both of its steps landed together: the token block
+alone leaves body copy at the meta size, so it is a worse resting place
+than either end. Cut as **0.5.2** the same day; the plan first named 0.6.0
+and says why the smaller number is still defensible.
 
 Supporting documents:
 

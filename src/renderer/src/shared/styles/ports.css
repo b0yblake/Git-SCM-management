@@ -25,7 +25,8 @@
 .ports-modal__title {
   flex: 1;
   margin: 0;
-  font-size: 1rem;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .ports-modal__header button,
@@ -35,11 +36,15 @@
 }
 
 .ports-modal__header button {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--border-strong);
-  border-radius: 3px;
+  display: inline-flex;
+  min-height: var(--control-sm);
+  align-items: center;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--surface-control);
   color: var(--text);
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -54,11 +59,16 @@
 }
 
 .ports-modal__filter {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--border-strong);
-  border-radius: 3px;
-  background: var(--surface-sunken);
+  min-height: var(--control-md);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--text);
+}
+
+.ports-modal__filter:focus {
+  border-color: var(--focus);
 }
 
 .ports-modal__table-wrap {
@@ -76,8 +86,8 @@
 
 .ports-modal__table th,
 .ports-modal__table td {
-  padding: var(--space-1) var(--space-2);
-  border-bottom: 1px solid var(--border);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border-muted);
   text-align: left;
   vertical-align: top;
 }
@@ -87,7 +97,7 @@
   top: 0;
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-weight: normal;
+  font-weight: 500;
 }
 
 .ports-modal__row--blocked {
@@ -100,12 +110,12 @@
 
 .ports-modal__blocked-reason {
   display: block;
-  color: var(--text-faint);
-  font-size: var(--font-tiny);
+  color: var(--text-muted);
+  font-size: var(--font-small);
 }
 
 .ports-modal__bindings {
-  font-family: Consolas, monospace;
+  font-family: var(--font-mono);
 }
 
 .ports-modal__empty,
