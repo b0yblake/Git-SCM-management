@@ -1,3 +1,4 @@
+import type { AppLinkId } from '@shared/contracts/about'
 import type { Unsubscribe } from '@shared/contracts/events'
 import type { IpcError } from '@shared/contracts/ipc'
 import type { Result } from '@shared/domain/result'
@@ -40,6 +41,16 @@ export interface GitDeckApi {
   readonly ports: PortsApi
   readonly updates: UpdatesApi
   readonly storage: StorageApi
+  readonly about: AboutApi
+}
+
+/**
+ * About (2026-09-04). `openLink` names one of the links in `APP_LINKS`; the
+ * URL is resolved in Main, so no URL crosses this bridge in either direction.
+ */
+export interface AboutApi {
+  openLink(link: AppLinkId): Promise<Result<null, IpcError>>
+  onOpen(callback: () => void): Unsubscribe
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { AppLinkId } from '@shared/contracts/about'
 import type { IpcError } from '@shared/contracts/ipc'
 import { DEFAULT_SETTINGS, type AppSettings } from '@shared/contracts/settings'
 import type {
@@ -23,6 +24,7 @@ type GitApi = Window['gitdeck']['git']
 type PortsApi = Window['gitdeck']['ports']
 type UpdatesApi = Window['gitdeck']['updates']
 type StorageApi = Window['gitdeck']['storage']
+type AboutApi = Window['gitdeck']['about']
 
 /** What the fake detector "found". Deliberately not all five. */
 export const FAKE_PROFILES: AvailableShellProfile[] = [
@@ -46,6 +48,7 @@ export interface FakeGitDeckApi {
   readonly ports: PortsApi
   readonly updates: UpdatesApi
   readonly storage: StorageApi
+  readonly about: AboutApi
   readonly calls: {
     create: unknown[]
     profiles: number
@@ -67,6 +70,7 @@ export interface FakeGitDeckApi {
     pendingOpenPath: number
     createShortcut: string[]
     pendingOpenWorkspace: number
+    aboutOpenLink: AppLinkId[]
   }
   /** What the fake has persisted — survives an `install()`/`uninstall()` cycle. */
   storedSettings(): AppSettings
@@ -108,6 +112,8 @@ export interface FakeGitDeckApi {
   setPendingOpenWorkspace(workspaceId: string | null): void
   /** Fires a second-instance open-workspace push. */
   emitOpenWorkspace(workspaceId: string): void
+  /** Fires the native Help → About GitDeck signal. */
+  emitAboutOpen(): void
   /**
    * Simulates Main falling back when a saved directory is gone: a create for
    * this path succeeds, but comes back seated in `FAKE_FALLBACK_CWD`.
@@ -152,7 +158,8 @@ export const emptyCalls = (): FakeGitDeckApi['calls'] => ({
   storageChooseDataFolder: 0,
   pendingOpenPath: 0,
   createShortcut: [],
-  pendingOpenWorkspace: 0
+  pendingOpenWorkspace: 0,
+  aboutOpenLink: []
 })
 
 export const createFakeGitDeckApi = (): FakeGitDeckApi => {
@@ -161,6 +168,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
   const openPathListeners = new Set<(event: TerminalOpenPathEvent) => void>()
   const openWorkspaceListeners = new Set<(event: { workspaceId: string }) => void>()
   const portsOpenListeners = new Set<() => void>()
+  const aboutOpenListeners = new Set<() => void>()
   let pendingOpenPath: string | null = null
   let pendingOpenWorkspace: string | null = null
   let createShortcutResult: { path: string } | null = { path: 'C:\\fake\\Workspace.lnk' }
@@ -443,6 +451,20 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     }
   }
 
+  /** Records the link id; the fake never has a URL to open, and nor does the real bridge. */
+  const aboutApi: AboutApi = {
+    openLink: (link) => {
+      calls.aboutOpenLink.push(link)
+      return Promise.resolve({ ok: true as const, value: null })
+    },
+    onOpen: (callback) => {
+      aboutOpenListeners.add(callback)
+      return () => {
+        aboutOpenListeners.delete(callback)
+      }
+    }
+  }
+
   return {
     terminal,
     settings: settingsApi,
@@ -451,6 +473,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     ports: portsApi,
     updates: updatesApi,
     storage: storageApi,
+    about: aboutApi,
     calls,
     storedSettings: () => settings,
     storedWorkspaces: () => [...workspaces.values()],
@@ -512,6 +535,9 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
     emitOpenWorkspace: (workspaceId) => {
       for (const listener of [...openWorkspaceListeners]) listener({ workspaceId })
     },
+    emitAboutOpen: () => {
+      for (const listener of [...aboutOpenListeners]) listener()
+    },
     markDirectoryMissing: (path) => {
       missingDirectories.add(path)
     },
@@ -521,7 +547,8 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       openPathListeners.size +
       openWorkspaceListeners.size +
       portsOpenListeners.size +
-      updateAvailableListeners.size,
+      updateAvailableListeners.size +
+      aboutOpenListeners.size,
     emitData: (event) => {
       for (const listener of [...dataListeners]) listener(event)
     },
@@ -537,7 +564,8 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
           settings: settingsApi,
           ports: portsApi,
           updates: updatesApi,
-          storage: storageApi
+          storage: storageApi,
+          about: aboutApi
         },
         configurable: true,
         writable: true
@@ -550,6 +578,7 @@ export const createFakeGitDeckApi = (): FakeGitDeckApi => {
       openWorkspaceListeners.clear()
       portsOpenListeners.clear()
       updateAvailableListeners.clear()
+      aboutOpenListeners.clear()
       Reflect.deleteProperty(window, 'gitdeck')
     }
   }

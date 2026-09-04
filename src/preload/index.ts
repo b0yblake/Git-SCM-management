@@ -1,4 +1,5 @@
 import { contextBridge } from 'electron'
+import { aboutApi } from './aboutApi'
 import type { GitDeckApi } from './api'
 import { gitApi } from './gitApi'
 import { portsApi } from './portsApi'
@@ -15,7 +16,8 @@ const api: GitDeckApi = {
   settings: settingsApi,
   ports: portsApi,
   updates: updatesApi,
-  storage: storageApi
+  storage: storageApi,
+  about: aboutApi
 }
 
 // contextIsolation is on, so this is the only channel between the two worlds.

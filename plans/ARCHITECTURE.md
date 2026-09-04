@@ -76,6 +76,7 @@ src/
 │   │                  dataRoot.ts · dataRootIpc.ts   (Phase 17)
 │   │                  openPath.ts · openPathIpc.ts · explorerMenu.ts   (Phase 18)
 │   │                  workspaceLaunch.ts · workspaceLaunchIpc.ts   (Phase 19)
+│   │                  aboutIpc.ts   (About, 2026-09-04)
 │   ├── features/
 │   │   ├── terminal/  domain/ application/ infrastructure/ ipc/ testing/ public.ts
 │   │   ├── workspace/ domain/ application/ infrastructure/ ipc/ testing/ public.ts
@@ -97,7 +98,8 @@ src/
     │   ├── git/       components/ hooks/ store/ public.ts
     │   ├── settings/  components/ hooks/ store/ public.ts
     │   ├── ports/     components/ hooks/ store/ public.ts   (Phase 12)
-    │   └── updates/   components/ hooks/ store/ public.ts   (Phase 16)
+    │   ├── updates/   components/ hooks/ store/ public.ts   (Phase 16)
+    │   └── about/     components/ hooks/ store/ public.ts   (2026-09-04)
     ├── shared/        components/ hooks/ styles/ utils/
     ├── testing/       fakeGitDeckApi.ts · setup.ts
     └── main.tsx
@@ -323,11 +325,15 @@ export const IPC = {
   storage: {
     info: 'storage:info', // Phase 17 — the picker is native and Main-owned
     choose: 'storage:choose' // no channel accepts a filesystem path
+  },
+  about: {
+    open: 'about:open', // one-way Main → renderer: Help → About GitDeck
+    link: 'about:link' // opens one project link by key; never by URL
   }
 } as const
 ```
 
-Seven namespaces, twenty-seven channels. No arbitrary channel strings scattered
+Eight namespaces, twenty-nine channels. No arbitrary channel strings scattered
 through the codebase, enforced by a repository scan in
 `shared/contracts/ipc.spec.ts`.
 
@@ -409,6 +415,13 @@ interface GitDeckApi {
     dataFolder(): Promise<Result<DataFolderInfo, IpcError>>
     chooseDataFolder(): Promise<Result<DataFolderInfo | null, IpcError>>
   }
+  about: {
+    // 2026-09-04. `openLink` names one of the links in `APP_LINKS`
+    // (shared/contracts/about.ts); Main resolves the key to a constant URL,
+    // so no URL crosses this bridge in either direction.
+    openLink(link: AppLinkId): Promise<Result<null, IpcError>>
+    onOpen(callback: () => void): Unsubscribe
+  }
 }
 ```
 
@@ -422,6 +435,7 @@ Zustand, one store per feature. No single global store.
 
 ```text
 terminalStore · workspaceStore · gitStore · settingsStore · portsStore · updatesStore
+aboutStore
 ```
 
 `terminalStore` also owns the Mosaic layout (Phases 13, 20, 21): the selected

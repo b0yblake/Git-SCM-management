@@ -64,11 +64,18 @@ describe('the IPC surface', () => {
       storage: {
         info: 'storage:info',
         choose: 'storage:choose'
+      },
+      // 2026-09-04 — deliberate addition. About GitDeck: the native
+      // Help → About signal, and opening one project link by key. No URL
+      // crosses either channel.
+      about: {
+        open: 'about:open',
+        link: 'about:link'
       }
     })
   })
 
-  it('holds seven namespaces and twenty-seven channels', () => {
+  it('holds eight namespaces and twenty-nine channels', () => {
     // A count is a second, blunter guard: renaming a channel keeps the count,
     // but adding one cannot.
     const namespaces = Object.keys(IPC)
@@ -81,8 +88,9 @@ describe('the IPC surface', () => {
       'git',
       'ports',
       'updates',
-      'storage'
+      'storage',
+      'about'
     ])
-    expect(channels).toHaveLength(27)
+    expect(channels).toHaveLength(29)
   })
 })

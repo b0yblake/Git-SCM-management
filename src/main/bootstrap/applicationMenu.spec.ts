@@ -36,8 +36,12 @@ vi.mock('electron', () => ({
   }
 }))
 
-const { buildApplicationMenuTemplate, createOpenPortsHandler, installApplicationMenu } =
-  await import('./applicationMenu')
+const {
+  buildApplicationMenuTemplate,
+  createOpenAboutHandler,
+  createOpenPortsHandler,
+  installApplicationMenu
+} = await import('./applicationMenu')
 
 interface TemplateItem {
   readonly id?: string
@@ -58,7 +62,10 @@ beforeEach(() => {
 })
 
 describe('the menu template', () => {
-  const template = buildApplicationMenuTemplate(() => {}) as TemplateItem[]
+  const template = buildApplicationMenuTemplate(
+    () => {},
+    () => {}
+  ) as TemplateItem[]
   const everything = flatten(template)
 
   it('contains File → Port… exactly once', () => {
@@ -67,6 +74,13 @@ describe('the menu template', () => {
 
     expect(portItems).toHaveLength(1)
     expect(template[0]?.submenu?.some((item) => item.label === 'Port…')).toBe(true)
+  })
+
+  it('contains Help → About GitDeck exactly once', () => {
+    const help = template.find((item) => item.label === 'Help')
+
+    expect(everything.filter((item) => item.label === 'About GitDeck')).toHaveLength(1)
+    expect(help?.submenu?.map((item) => item.label)).toEqual(['About GitDeck'])
   })
 
   it('keeps the standard edit roles, so copy/paste behavior survives the custom menu', () => {
@@ -122,6 +136,25 @@ describe('the Port… click handler', () => {
     createOpenPortsHandler(() => window)()
 
     expect(window.sent).toEqual([])
+  })
+})
+
+describe('the About GitDeck click handler', () => {
+  it('sends about:open to the focused, live window — and nothing else', () => {
+    const window = fakeWindow()
+
+    createOpenAboutHandler(() => window)()
+
+    expect(window.sent).toEqual([IPC.about.open])
+  })
+
+  it('is a no-op with no focused window, or a dead one', () => {
+    expect(() => createOpenAboutHandler(() => null)()).not.toThrow()
+
+    for (const window of [fakeWindow(true), fakeWindow(false, true)]) {
+      createOpenAboutHandler(() => window)()
+      expect(window.sent).toEqual([])
+    }
   })
 })
 

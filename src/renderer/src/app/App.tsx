@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AboutHost, useAboutStore } from '../features/about/public'
 import { GitStatusBar } from '../features/git/public'
 import { PortsModalHost } from '../features/ports/public'
 import { SettingsPanel } from '../features/settings/public'
@@ -44,9 +45,18 @@ export const App = (): React.JSX.Element => {
       <ToastHost />
       <PortsModalHost />
       <UpdateBanner />
+      <AboutHost />
       {/* App-owned, overlaying the status bar's right end: the git feature
-          stays deletable without taking the version display with it. */}
-      <span className="app-version">v{__APP_VERSION__}</span>
+          stays deletable without taking the version display with it. The
+          version is also the way into About, alongside Help → About GitDeck. */}
+      <button
+        type="button"
+        className="app-version"
+        title="About GitDeck"
+        onClick={() => useAboutStore.getState().open()}
+      >
+        v{__APP_VERSION__}
+      </button>
     </div>
   )
 }

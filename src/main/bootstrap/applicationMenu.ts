@@ -22,19 +22,29 @@ export interface MenuTargetWindow {
 }
 
 /**
- * Sends the ports open event to the focused, live window. No focused window —
- * the user clicked the menu of a dying app, or nothing has focus — is a no-op,
+ * Sends a menu signal to the focused, live window. No focused window — the
+ * user clicked the menu of a dying app, or nothing has focus — is a no-op,
  * never a throw: a menu click must not be able to crash Main.
  */
-export const createOpenPortsHandler =
-  (getFocusedWindow: () => MenuTargetWindow | null) => (): void => {
+const sendToFocusedWindow =
+  (getFocusedWindow: () => MenuTargetWindow | null, channel: string) => (): void => {
     const window = getFocusedWindow()
     if (!window || window.isDestroyed() || window.webContents.isDestroyed()) return
-    window.webContents.send(IPC.ports.open)
+    window.webContents.send(channel)
   }
 
+export const createOpenPortsHandler = (
+  getFocusedWindow: () => MenuTargetWindow | null
+): (() => void) => sendToFocusedWindow(getFocusedWindow, IPC.ports.open)
+
+/** Help → About GitDeck. Carries no payload; the dialog is renderer-side. */
+export const createOpenAboutHandler = (
+  getFocusedWindow: () => MenuTargetWindow | null
+): (() => void) => sendToFocusedWindow(getFocusedWindow, IPC.about.open)
+
 export const buildApplicationMenuTemplate = (
-  onOpenPorts: () => void
+  onOpenPorts: () => void,
+  onOpenAbout: () => void
 ): MenuItemConstructorOptions[] => [
   {
     label: 'File',
@@ -74,12 +84,22 @@ export const buildApplicationMenuTemplate = (
   {
     label: 'Window',
     submenu: [{ role: 'minimize' }, { role: 'close' }]
+  },
+  {
+    label: 'Help',
+    submenu: [
+      // `id` for the same reason as Port…: the packaged E2E reaches the real
+      // click handler through it.
+      { id: 'open-about', label: 'About GitDeck', click: onOpenAbout }
+    ]
   }
 ]
 
 export const installApplicationMenu = (): void => {
+  const focused = (): MenuTargetWindow | null => BrowserWindow.getFocusedWindow()
   const template = buildApplicationMenuTemplate(
-    createOpenPortsHandler(() => BrowserWindow.getFocusedWindow())
+    createOpenPortsHandler(focused),
+    createOpenAboutHandler(focused)
   )
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

@@ -62,6 +62,16 @@ export const IPC = {
     info: 'storage:info',
     /** Opens the native folder picker — no path ever crosses this channel. */
     choose: 'storage:choose'
+  },
+
+  about: {
+    /** One-way Main → renderer: the native Help → About GitDeck entry. */
+    open: 'about:open',
+    /**
+     * Opens one project link. The payload names a key from `APP_LINKS`; Main
+     * resolves it to a constant URL, so no URL ever crosses this channel.
+     */
+    link: 'about:link'
   }
 } as const
 

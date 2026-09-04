@@ -544,10 +544,128 @@ button {
   display: flex;
   align-items: center;
   min-height: 1.6rem;
-  padding: 0.15rem 0;
-  color: var(--text-faint);
-  font-size: 0.75rem;
-  pointer-events: none;
+  padding: 0.15rem var(--space-1);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--font-small);
+  cursor: pointer;
+}
+
+.app-version:hover,
+.app-version:focus-visible {
+  color: var(--text);
+}
+
+/* Wider than the default dialog: the About text is prose, and 28rem would
+   set it in a column too narrow to read comfortably. */
+.about-modal {
+  max-width: 34rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.about-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.about-modal__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.about-modal__tagline {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+}
+
+.about-modal__header button {
+  padding: 0 var(--space-1);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.about-modal__header button:hover,
+.about-modal__header button:focus-visible {
+  color: var(--text);
+}
+
+.about-modal__description {
+  margin: var(--space-3) 0 0;
+  line-height: 1.55;
+}
+
+.about-modal__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+
+.about-modal__facts dt {
+  color: var(--text-muted);
+}
+
+.about-modal__facts dd {
+  margin: 0;
+}
+
+.about-modal__heading {
+  margin: var(--space-4) 0 var(--space-1);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.about-modal__note {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.about-modal__links {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-modal__links li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.about-modal__links button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.about-modal__links button:hover,
+.about-modal__links button:focus-visible {
+  text-decoration: underline;
+}
+
+.about-modal__url {
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  overflow-wrap: anywhere;
 }
 
 .context-menu-backdrop {
